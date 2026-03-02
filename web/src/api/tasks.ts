@@ -1,5 +1,5 @@
 import apiClient from './client'
-import type { Task, PaginatedResponse, ApiResponse, PaginationParams } from '@/types'
+import type { Task, PaginatedApiResponse, ApiResponse, PaginationParams } from '@/types'
 
 export interface TaskListParams extends PaginationParams {
   status?: string
@@ -15,9 +15,12 @@ export interface CreateTaskRequest {
 }
 
 export const taskApi = {
-  async list(params: TaskListParams = {}): Promise<PaginatedResponse<Task>> {
-    const response = await apiClient.get<PaginatedResponse<Task>>('/tasks', { params })
-    return response.data
+  async list(params: TaskListParams = {}): Promise<{ data: Task[]; total: number }> {
+    const response = await apiClient.get<PaginatedApiResponse<Task>>('/tasks', { params })
+    return {
+      data: response.data.data,
+      total: response.data.pagination.total,
+    }
   },
 
   async get(id: string): Promise<Task> {

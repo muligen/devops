@@ -20,8 +20,8 @@ export interface RefreshTokenResponse {
 
 export const authApi = {
   async login(data: LoginRequest): Promise<LoginResponse> {
-    const response = await apiClient.post<LoginResponse>('/auth/login', data)
-    return response.data
+    const response = await apiClient.post<ApiResponse<LoginResponse>>('/auth/login', data)
+    return response.data.data
   },
 
   async logout(): Promise<void> {
@@ -29,10 +29,10 @@ export const authApi = {
   },
 
   async refreshToken(refreshToken: string): Promise<RefreshTokenResponse> {
-    const response = await apiClient.post<RefreshTokenResponse>('/auth/refresh', {
+    const response = await apiClient.post<ApiResponse<RefreshTokenResponse>>('/auth/refresh', {
       refresh_token: refreshToken,
     })
-    return response.data
+    return response.data.data
   },
 
   async getCurrentUser(): Promise<User> {

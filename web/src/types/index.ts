@@ -1,8 +1,21 @@
 // Common API response types
 
 export interface ApiResponse<T> {
+  code: number
+  message: string
   data: T
-  message?: string
+}
+
+export interface PaginatedApiResponse<T> {
+  code: number
+  message: string
+  data: T[]
+  pagination: {
+    page: number
+    page_size: number
+    total: number
+    total_pages: number
+  }
 }
 
 export interface PaginatedResponse<T> {

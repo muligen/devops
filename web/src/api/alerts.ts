@@ -1,5 +1,5 @@
 import apiClient from './client'
-import type { AlertRule, AlertEvent, PaginatedResponse, ApiResponse, PaginationParams } from '@/types'
+import type { AlertRule, AlertEvent, PaginatedApiResponse, ApiResponse, PaginationParams } from '@/types'
 
 export interface AlertRuleListParams extends PaginationParams {
   enabled?: boolean
@@ -23,9 +23,12 @@ export interface CreateAlertRuleRequest {
 
 export const alertApi = {
   // Alert Rules
-  async listRules(params: AlertRuleListParams = {}): Promise<PaginatedResponse<AlertRule>> {
-    const response = await apiClient.get<PaginatedResponse<AlertRule>>('/alerts/rules', { params })
-    return response.data
+  async listRules(params: AlertRuleListParams = {}): Promise<{ data: AlertRule[]; total: number }> {
+    const response = await apiClient.get<PaginatedApiResponse<AlertRule>>('/alerts/rules', { params })
+    return {
+      data: response.data.data,
+      total: response.data.pagination.total,
+    }
   },
 
   async getRule(id: string): Promise<AlertRule> {
@@ -48,9 +51,12 @@ export const alertApi = {
   },
 
   // Alert Events (History)
-  async listEvents(params: AlertEventListParams = {}): Promise<PaginatedResponse<AlertEvent>> {
-    const response = await apiClient.get<PaginatedResponse<AlertEvent>>('/alerts/history', { params })
-    return response.data
+  async listEvents(params: AlertEventListParams = {}): Promise<{ data: AlertEvent[]; total: number }> {
+    const response = await apiClient.get<PaginatedApiResponse<AlertEvent>>('/alerts/history', { params })
+    return {
+      data: response.data.data,
+      total: response.data.pagination.total,
+    }
   },
 
   async acknowledgeEvent(id: string): Promise<AlertEvent> {

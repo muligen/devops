@@ -691,35 +691,30 @@ type TrendDataPoint struct {
 func (s *Service) GetDashboardStats(ctx context.Context) (*DashboardStats, error) {
 	stats := &DashboardStats{}
 
-	// Agent stats
-	if err := s.repo.db.WithContext(ctx).Model(&struct {
-		TableName struct{} `gorm:"table:agents"`
-	}{}).Where("deleted_at IS NULL").Count(&stats.TotalAgents).Error; err != nil {
-		return nil, err
+	// Agent stats - use Table() for raw table queries
+	if err := s.repo.db.WithContext(ctx).Table("agents").Where("deleted_at IS NULL").Count(&stats.TotalAgents).Error; err != nil {
+		return nil, fmt.Errorf("failed to count total agents: %w", err)
 	}
-	if err := s.repo.db.WithContext(ctx).Model(&struct {
-		TableName struct{} `gorm:"table:agents"`
-	}{}).Where("status = ? AND deleted_at IS NULL", "online").Count(&stats.OnlineAgents).Error; err != nil {
-		return nil, err
+	if err := s.repo.db.WithContext(ctx).Table("agents").Where("status = ? AND deleted_at IS NULL", "online").Count(&stats.OnlineAgents).Error; err != nil {
+		return nil, fmt.Errorf("failed to count online agents: %w", err)
 	}
 	stats.OfflineAgents = stats.TotalAgents - stats.OnlineAgents
 
 	// Task stats
-	taskModel := s.repo.db.WithContext(ctx).Table("tasks")
-	if err := taskModel.Count(&stats.TotalTasks).Error; err != nil {
-		return nil, err
+	if err := s.repo.db.WithContext(ctx).Table("tasks").Count(&stats.TotalTasks).Error; err != nil {
+		return nil, fmt.Errorf("failed to count total tasks: %w", err)
 	}
 	if err := s.repo.db.WithContext(ctx).Table("tasks").Where("status = ?", "pending").Count(&stats.PendingTasks).Error; err != nil {
-		return nil, err
+		return nil, fmt.Errorf("failed to count pending tasks: %w", err)
 	}
 	if err := s.repo.db.WithContext(ctx).Table("tasks").Where("status = ?", "running").Count(&stats.RunningTasks).Error; err != nil {
-		return nil, err
+		return nil, fmt.Errorf("failed to count running tasks: %w", err)
 	}
 	if err := s.repo.db.WithContext(ctx).Table("tasks").Where("status = ?", "success").Count(&stats.CompletedTasks).Error; err != nil {
-		return nil, err
+		return nil, fmt.Errorf("failed to count completed tasks: %w", err)
 	}
 	if err := s.repo.db.WithContext(ctx).Table("tasks").Where("status IN ?", []string{"failed", "timeout"}).Count(&stats.FailedTasks).Error; err != nil {
-		return nil, err
+		return nil, fmt.Errorf("failed to count failed tasks: %w", err)
 	}
 
 	// Alert stats

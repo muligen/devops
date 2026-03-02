@@ -1,5 +1,5 @@
 import apiClient from './client'
-import type { Agent, PaginatedResponse, ApiResponse, PaginationParams } from '@/types'
+import type { Agent, PaginatedApiResponse, ApiResponse, PaginationParams } from '@/types'
 
 export interface AgentListParams extends PaginationParams {
   status?: 'online' | 'offline'
@@ -9,9 +9,12 @@ export interface AgentListParams extends PaginationParams {
 }
 
 export const agentApi = {
-  async list(params: AgentListParams = {}): Promise<PaginatedResponse<Agent>> {
-    const response = await apiClient.get<PaginatedResponse<Agent>>('/agents', { params })
-    return response.data
+  async list(params: AgentListParams = {}): Promise<{ data: Agent[]; total: number }> {
+    const response = await apiClient.get<PaginatedApiResponse<Agent>>('/agents', { params })
+    return {
+      data: response.data.data,
+      total: response.data.pagination.total,
+    }
   },
 
   async get(id: string): Promise<Agent> {
@@ -27,7 +30,7 @@ export const agentApi = {
     const response = await apiClient.get(`/agents/${id}/metrics`, {
       params: { range },
     })
-    return response.data
+    return response.data.data
   },
 }
 
