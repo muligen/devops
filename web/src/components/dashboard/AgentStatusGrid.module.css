@@ -1,0 +1,95 @@
+.card {
+  margin-top: 16px;
+}
+
+.agentCard {
+  background: #fafafa;
+  border-radius: 8px;
+  padding: 12px;
+  cursor: pointer;
+  transition: all 0.3s;
+  height: 100%;
+  min-height: 140px;
+}
+
+.agentCard:hover {
+  background: #f0f0f0;
+  transform: translateY(-2px);
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+}
+
+.agentHeader {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 8px;
+}
+
+.agentIcon {
+  width: 32px;
+  height: 32px;
+  background: #e6f7ff;
+  border-radius: 6px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: #1890ff;
+  font-size: 16px;
+}
+
+.statusTag {
+  margin: 0;
+  font-size: 11px;
+  padding: 0 4px;
+  line-height: 18px;
+  border-radius: 4px;
+}
+
+.agentName {
+  display: block;
+  font-weight: 500;
+  font-size: 13px;
+  margin-bottom: 2px;
+}
+
+.agentHostname {
+  display: block;
+  font-size: 11px;
+  margin-bottom: 8px;
+}
+
+.metrics {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.metric {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.metricLabel {
+  font-size: 10px;
+  width: 28px;
+  flex-shrink: 0;
+}
+
+.metric :global(.ant-progress) {
+  flex: 1;
+  min-width: 0;
+}
+
+.metricValue {
+  font-size: 10px;
+  width: 32px;
+  text-align: right;
+  flex-shrink: 0;
+}
+
+.lastSeen {
+  display: block;
+  font-size: 11px;
+  margin-top: 8px;
+}

@@ -107,6 +107,63 @@ func (r *Repository) List(ctx context.Context, page, pageSize int, status string
 	return agents, total, nil
 }
 
+// ListOptions represents options for listing agents.
+type ListOptions struct {
+	Page     int
+	PageSize int
+	Status   string
+	Sort     string // cpu_usage, memory_percent, disk_percent, created_at
+	Order    string // asc, desc
+}
+
+// ListWithSort lists agents with pagination and sorting support.
+func (r *Repository) ListWithSort(ctx context.Context, opts ListOptions) ([]domain.Agent, int64, error) {
+	var agents []domain.Agent
+	var total int64
+
+	query := r.db.WithContext(ctx).Model(&domain.Agent{}).Where("agents.deleted_at IS NULL")
+
+	if opts.Status != "" {
+		query = query.Where("agents.status = ?", opts.Status)
+	}
+
+	// Handle resource sorting by joining with latest metrics
+	if opts.Sort == "cpu_usage" || opts.Sort == "memory_percent" || opts.Sort == "disk_percent" {
+		// Subquery to get the latest metric for each agent
+		subQuery := r.db.Table("agent_metrics").
+			Select("DISTINCT ON (agent_id) agent_id, cpu_usage, memory_percent, disk_percent").
+			Order("agent_id, collected_at DESC")
+
+		query = query.Select("agents.*").
+			Joins("LEFT JOIN (?) AS latest_metrics ON agents.id = latest_metrics.agent_id", subQuery)
+
+		order := "DESC"
+		if opts.Order == "asc" {
+			order = "ASC"
+		}
+		query = query.Order("latest_metrics." + opts.Sort + " " + order + " NULLS LAST")
+	} else {
+		// Default sorting by created_at
+		order := "DESC"
+		if opts.Order == "asc" {
+			order = "ASC"
+		}
+		query = query.Order("agents.created_at " + order)
+	}
+
+	if err := query.Count(&total).Error; err != nil {
+		return nil, 0, err
+	}
+
+	offset := (opts.Page - 1) * opts.PageSize
+	result := query.Offset(offset).Limit(opts.PageSize).Find(&agents)
+	if result.Error != nil {
+		return nil, 0, result.Error
+	}
+
+	return agents, total, nil
+}
+
 // Update updates an agent.
 func (r *Repository) Update(ctx context.Context, agent *domain.Agent) error {
 	result := r.db.WithContext(ctx).Save(agent)
@@ -213,6 +270,11 @@ func (s *Service) GetAgentByToken(ctx context.Context, token string) (*domain.Ag
 // ListAgents lists agents with pagination.
 func (s *Service) ListAgents(ctx context.Context, page, pageSize int, status string) ([]domain.Agent, int64, error) {
 	return s.repo.List(ctx, page, pageSize, status)
+}
+
+// ListAgentsWithSort lists agents with pagination and sorting support.
+func (s *Service) ListAgentsWithSort(ctx context.Context, opts ListOptions) ([]domain.Agent, int64, error) {
+	return s.repo.ListWithSort(ctx, opts)
 }
 
 // UpdateAgentStatus updates agent status.

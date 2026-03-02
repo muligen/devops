@@ -1,0 +1,2 @@
+-- +migrate Down
+-- This file is intentionally empty as the down migration is defined in the up file

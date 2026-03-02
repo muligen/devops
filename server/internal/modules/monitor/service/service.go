@@ -4,6 +4,7 @@ package service
 import (
 	"context"
 	"errors"
+	"fmt"
 	"sync"
 	"time"
 
@@ -18,6 +19,8 @@ var (
 	ErrMetricNotFound = errors.New("metric not found")
 	// ErrAlertRuleNotFound is returned when alert rule is not found.
 	ErrAlertRuleNotFound = errors.New("alert rule not found")
+	// ErrAlertEventNotFound is returned when alert event is not found.
+	ErrAlertEventNotFound = errors.New("alert event not found")
 )
 
 // Time-series optimization constants
@@ -168,13 +171,14 @@ func (r *Repository) DeleteAlertRule(ctx context.Context, id string) error {
 
 // Service provides monitoring business logic.
 type Service struct {
-	repo          *Repository
-	mq            *mq.Client
-	logger        *logger.Logger
-	batch         *MetricBatch
-	agentStatusFn func(ctx context.Context, agentID string, status string) error
-	stopCh        chan struct{}
-	wg            sync.WaitGroup
+	repo             *Repository
+	mq               *mq.Client
+	logger           *logger.Logger
+	batch            *MetricBatch
+	agentStatusFn   func(ctx context.Context, agentID string, status string) error
+	alertEventRepo   *AlertEventRepository
+	stopCh           chan struct{}
+	wg               sync.WaitGroup
 }
 
 // NewService creates a new monitor service.
@@ -184,6 +188,11 @@ func NewService(repo *Repository) *Service {
 		batch: NewMetricBatch(),
 		stopCh: make(chan struct{}),
 	}
+}
+
+// SetAlertEventRepository sets the alert event repository.
+func (s *Service) SetAlertEventRepository(repo *AlertEventRepository) {
+	s.alertEventRepo = repo
 }
 
 // SetMQ sets the message queue client.
@@ -426,6 +435,21 @@ func (s *Service) evaluateRule(ctx context.Context, rule *domain.AlertRule) erro
 				)
 			}
 
+			// Create alert event record
+			if s.alertEventRepo != nil {
+				message := fmt.Sprintf("%s %s %.2f (threshold: %.2f)",
+					rule.MetricType, rule.Condition, value, rule.Threshold)
+				_ = s.alertEventRepo.Create(ctx, &domain.AlertEvent{
+					RuleID:      &rule.ID,
+					AgentID:     agentID,
+					MetricValue: value,
+					Threshold:   rule.Threshold,
+					Status:      domain.AlertStatusPending,
+					Message:     message,
+					TriggeredAt: time.Now(),
+				})
+			}
+
 			// Publish alert event
 			if s.mq != nil {
 				_ = s.mq.PublishEvent(ctx, "alert.triggered", map[string]interface{}{
@@ -579,17 +603,88 @@ func (s *Service) EvaluateRule(rule *domain.AlertRule, value float64) bool {
 	}
 }
 
+// ListAlertEvents lists alert events with filtering.
+func (s *Service) ListAlertEvents(ctx context.Context, opts AlertEventListOptions) ([]domain.AlertEvent, int64, error) {
+	if s.alertEventRepo == nil {
+		return nil, 0, errors.New("alert event repository not configured")
+	}
+	return s.alertEventRepo.ListWithAgentInfo(ctx, opts)
+}
+
+// AcknowledgeEvent acknowledges an alert event.
+func (s *Service) AcknowledgeEvent(ctx context.Context, id, userID string) (*domain.AlertEvent, error) {
+	if s.alertEventRepo == nil {
+		return nil, errors.New("alert event repository not configured")
+	}
+
+	event, err := s.alertEventRepo.GetByID(ctx, id)
+	if err != nil {
+		return nil, err
+	}
+
+	if !event.IsPending() {
+		return nil, ErrAlertEventNotFound
+	}
+
+	event.Acknowledge(userID)
+	if err := s.alertEventRepo.Update(ctx, event); err != nil {
+		return nil, err
+	}
+
+	return event, nil
+}
+
+// BatchAcknowledge acknowledges multiple alert events.
+func (s *Service) BatchAcknowledge(ctx context.Context, ids []string, userID string) (int, error) {
+	if s.alertEventRepo == nil {
+		return 0, errors.New("alert event repository not configured")
+	}
+
+	count := 0
+	for _, id := range ids {
+		event, err := s.alertEventRepo.GetByID(ctx, id)
+		if err != nil {
+			continue
+		}
+
+		if event.IsPending() {
+			event.Acknowledge(userID)
+			if err := s.alertEventRepo.Update(ctx, event); err == nil {
+				count++
+			}
+		}
+	}
+	return count, nil
+}
+
+// GetAlertEvent gets an alert event by ID.
+func (s *Service) GetAlertEvent(ctx context.Context, id string) (*domain.AlertEvent, error) {
+	if s.alertEventRepo == nil {
+		return nil, errors.New("alert event repository not configured")
+	}
+	return s.alertEventRepo.GetByID(ctx, id)
+}
+
 // DashboardStats represents dashboard statistics.
 type DashboardStats struct {
-	TotalAgents      int64 `json:"total_agents"`
-	OnlineAgents     int64 `json:"online_agents"`
-	OfflineAgents    int64 `json:"offline_agents"`
-	TotalTasks       int64 `json:"total_tasks"`
-	PendingTasks     int64 `json:"pending_tasks"`
-	RunningTasks     int64 `json:"running_tasks"`
-	CompletedTasks   int64 `json:"completed_tasks"`
-	FailedTasks      int64 `json:"failed_tasks"`
-	AlertsTriggered  int64 `json:"alerts_triggered"`
+	TotalAgents     int64            `json:"total_agents"`
+	OnlineAgents    int64            `json:"online_agents"`
+	OfflineAgents   int64            `json:"offline_agents"`
+	TotalTasks      int64            `json:"total_tasks"`
+	PendingTasks    int64            `json:"pending_tasks"`
+	RunningTasks    int64            `json:"running_tasks"`
+	CompletedTasks  int64            `json:"completed_tasks"`
+	FailedTasks     int64            `json:"failed_tasks"`
+	AlertsTriggered int64            `json:"alerts_triggered"`
+	PendingAlerts   int64            `json:"pending_alerts"`
+	TaskTrend       []TrendDataPoint `json:"task_trend,omitempty"`
+	AlertTrend      []TrendDataPoint `json:"alert_trend,omitempty"`
+}
+
+// TrendDataPoint represents a data point in a trend.
+type TrendDataPoint struct {
+	Time  string `json:"time"`
+	Count int64  `json:"count"`
 }
 
 // GetDashboardStats gets dashboard statistics.
@@ -627,5 +722,91 @@ func (s *Service) GetDashboardStats(ctx context.Context) (*DashboardStats, error
 		return nil, err
 	}
 
+	// Alert stats
+	if s.alertEventRepo != nil {
+		pending, _ := s.alertEventRepo.GetPendingCount(ctx)
+		stats.PendingAlerts = pending
+	}
+
 	return stats, nil
+}
+
+// GetDashboardStatsWithTrend gets dashboard statistics with trend data.
+func (s *Service) GetDashboardStatsWithTrend(ctx context.Context, includeTrend bool) (*DashboardStats, error) {
+	stats, err := s.GetDashboardStats(ctx)
+	if err != nil {
+		return nil, err
+	}
+
+	if includeTrend {
+		// Get task trend (last 24 hours, hourly)
+		stats.TaskTrend, _ = s.getTaskTrend(ctx, 24*time.Hour, time.Hour)
+
+		// Get alert trend (last 24 hours, hourly)
+		stats.AlertTrend, _ = s.getAlertTrend(ctx, 24*time.Hour, time.Hour)
+	}
+
+	return stats, nil
+}
+
+// getTaskTrend gets task count trend over time.
+func (s *Service) getTaskTrend(ctx context.Context, duration, interval time.Duration) ([]TrendDataPoint, error) {
+	var points []TrendDataPoint
+
+	now := time.Now()
+	start := now.Add(-duration)
+
+	// Generate hourly buckets for last 24 hours
+	for t := start; t.Before(now); t = t.Add(interval) {
+		nextT := t.Add(interval)
+
+		var count int64
+		err := s.repo.db.WithContext(ctx).
+			Table("tasks").
+			Where("created_at >= ? AND created_at < ?", t, nextT).
+			Count(&count).Error
+		if err != nil {
+			continue
+		}
+
+		points = append(points, TrendDataPoint{
+			Time:  t.Format(time.RFC3339),
+			Count: count,
+		})
+	}
+
+	return points, nil
+}
+
+// getAlertTrend gets alert count trend over time.
+func (s *Service) getAlertTrend(ctx context.Context, duration, interval time.Duration) ([]TrendDataPoint, error) {
+	var points []TrendDataPoint
+
+	if s.alertEventRepo == nil {
+		return points, nil
+	}
+
+	now := time.Now()
+	start := now.Add(-duration)
+
+	// Generate hourly buckets for last 24 hours
+	for t := start; t.Before(now); t = t.Add(interval) {
+		nextT := t.Add(interval)
+
+		var count int64
+		err := s.alertEventRepo.db.WithContext(ctx).
+			Model(&domain.AlertEvent{}).
+			Where("triggered_at >= ? AND triggered_at < ?", t, nextT).
+			Count(&count).Error
+		if err != nil {
+			continue
+		}
+
+		points = append(points, TrendDataPoint{
+			Time:  t.Format(time.RFC3339),
+			Count: count,
+		})
+	}
+
+	return points, nil
 }

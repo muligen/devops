@@ -1,0 +1,48 @@
+.statCard {
+  height: 100%;
+}
+
+.statContent {
+  display: flex;
+  align-items: flex-start;
+  gap: 16px;
+}
+
+.statIcon {
+  width: 48px;
+  height: 48px;
+  border-radius: 8px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+
+.statInfo {
+  flex: 1;
+  min-width: 0;
+}
+
+.statTitle {
+  font-size: 14px;
+  display: block;
+  margin-bottom: 4px;
+}
+
+.statValue {
+  margin: 0 !important;
+  font-size: 28px !important;
+  font-weight: 600 !important;
+}
+
+.statTotal {
+  font-size: 16px;
+  font-weight: 400;
+  color: #8c8c8c;
+}
+
+.statSuffix {
+  font-size: 12px;
+  display: block;
+  margin-top: 4px;
+}

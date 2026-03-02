@@ -217,6 +217,7 @@ func (app *Application) setupRouter() *gin.Engine {
 	// Middleware
 	router.Use(gin.Recovery())
 	router.Use(middleware.RequestLogger(app.logger))
+	router.Use(middleware.CORS([]string{"*"}))
 
 	// Health check
 	router.GET("/health", func(c *gin.Context) {
@@ -237,6 +238,9 @@ func (app *Application) setupRouter() *gin.Engine {
 
 	// Create WebSocket handler first (needed for task dispatching)
 	wsHandler := agentHandler.NewWebSocketHandler(agentSvc, app.redis, app.rabbitMQ, app.logger)
+
+	// Create dashboard WebSocket handler for frontend
+	dashboardWSHandler := monitorHandler.NewDashboardWSHandler(app.jwtService, app.rabbitMQ, app.logger)
 
 	// Initialize task service with queue and dispatcher
 	taskRepo := taskService.NewRepository(app.db.DB)
@@ -277,6 +281,11 @@ func (app *Application) setupRouter() *gin.Engine {
 		// Agent WebSocket (public, handles own auth)
 		v1.GET("/agent/ws", func(c *gin.Context) {
 			wsHandler.Handle(c)
+		})
+
+		// Dashboard WebSocket for frontend (protected by JWT)
+		v1.GET("/ws/dashboard", func(c *gin.Context) {
+			dashboardWSHandler.Handle(c)
 		})
 
 		// Protected routes

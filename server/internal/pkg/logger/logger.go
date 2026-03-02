@@ -134,6 +134,14 @@ func (l *Logger) Fatal(msg string, fields ...zap.Field) {
 	l.Logger.Fatal(msg, fields...)
 }
 
+// NewNop creates a no-op logger that discards all output.
+func NewNop() *Logger {
+	return &Logger{
+		Logger: zap.NewNop(),
+		sugar:  zap.NewNop().Sugar(),
+	}
+}
+
 // With creates a child logger with additional fields.
 func (l *Logger) With(fields ...zap.Field) *zap.Logger {
 	return l.Logger.With(fields...)

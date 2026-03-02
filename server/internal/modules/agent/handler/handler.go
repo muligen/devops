@@ -72,6 +72,8 @@ func (h *Handler) ListAgents(c *gin.Context) {
 	page := 1
 	pageSize := 20
 	status := c.Query("status")
+	sort := c.Query("sort")
+	order := c.Query("order")
 
 	if p := c.Query("page"); p != "" {
 		if parsed, err := strconv.Atoi(p); err == nil && parsed > 0 {
@@ -85,7 +87,40 @@ func (h *Handler) ListAgents(c *gin.Context) {
 		}
 	}
 
-	agents, total, err := h.service.ListAgents(c.Request.Context(), page, pageSize, status)
+	// Validate sort field
+	validSortFields := map[string]bool{
+		"cpu_usage":      true,
+		"memory_percent": true,
+		"disk_percent":   true,
+		"created_at":     true,
+		"":               true,
+	}
+	if !validSortFields[sort] {
+		sort = "" // Default to created_at
+	}
+
+	// Validate order
+	if order != "asc" && order != "desc" {
+		order = "desc"
+	}
+
+	var agents []domain.Agent
+	var total int64
+	var err error
+
+	// Use sorting method if sort is specified
+	if sort != "" {
+		agents, total, err = h.service.ListAgentsWithSort(c.Request.Context(), service.ListOptions{
+			Page:     page,
+			PageSize: pageSize,
+			Status:   status,
+			Sort:     sort,
+			Order:    order,
+		})
+	} else {
+		agents, total, err = h.service.ListAgents(c.Request.Context(), page, pageSize, status)
+	}
+
 	if err != nil {
 		response.InternalError(c, "failed to list agents")
 		return

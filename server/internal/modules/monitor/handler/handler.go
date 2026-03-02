@@ -118,7 +118,18 @@ func (h *Handler) GetLatestMetric(c *gin.Context) {
 
 // GetDashboardStats handles GET /api/v1/dashboard/stats
 func (h *Handler) GetDashboardStats(c *gin.Context) {
-	stats, err := h.service.GetDashboardStats(c.Request.Context())
+	// Check if trend data is requested
+	includeTrend := c.Query("include_trend") == "true"
+
+	var stats interface{}
+	var err error
+
+	if includeTrend {
+		stats, err = h.service.GetDashboardStatsWithTrend(c.Request.Context(), true)
+	} else {
+		stats, err = h.service.GetDashboardStats(c.Request.Context())
+	}
+
 	if err != nil {
 		response.InternalError(c, "failed to get dashboard stats")
 		return
@@ -284,6 +295,160 @@ func (h *Handler) DeleteAlertRule(c *gin.Context) {
 	response.Success(c, gin.H{"message": "alert rule deleted"})
 }
 
+// AlertEventResponse represents an alert event response.
+type AlertEventResponse struct {
+	ID             string  `json:"id"`
+	RuleID         string  `json:"rule_id"`
+	RuleName       string  `json:"rule_name"`
+	AgentID        string  `json:"agent_id"`
+	AgentName      string  `json:"agent_name"`
+	MetricValue    float64 `json:"metric_value"`
+	Threshold      float64 `json:"threshold"`
+	Status         string  `json:"status"`
+	Message        string  `json:"message"`
+	TriggeredAt    string  `json:"triggered_at"`
+	ResolvedAt     string  `json:"resolved_at,omitempty"`
+	AcknowledgedBy string  `json:"acknowledged_by,omitempty"`
+	AcknowledgedAt string  `json:"acknowledged_at,omitempty"`
+}
+
+// GetAlertHistory handles GET /api/v1/alerts/history
+func (h *Handler) GetAlertHistory(c *gin.Context) {
+	// Parse query parameters
+	opts := service.AlertEventListOptions{
+		Status: c.Query("status"),
+		AgentID: c.Query("agent_id"),
+		RuleID: c.Query("rule_id"),
+	}
+
+	// Parse time range
+	if start := c.Query("start"); start != "" {
+		if t, err := time.Parse(time.RFC3339, start); err == nil {
+			opts.StartTime = &t
+		}
+	}
+	if end := c.Query("end"); end != "" {
+		if t, err := time.Parse(time.RFC3339, end); err == nil {
+			opts.EndTime = &t
+		}
+	}
+
+	// Parse pagination
+	opts.Page = 1
+	opts.PageSize = 20
+	if p := c.Query("page"); p != "" {
+		if parsed, err := strconv.Atoi(p); err == nil && parsed > 0 {
+			opts.Page = parsed
+		}
+	}
+	if ps := c.Query("page_size"); ps != "" {
+		if parsed, err := strconv.Atoi(ps); err == nil && parsed > 0 && parsed <= 100 {
+			opts.PageSize = parsed
+		}
+	}
+
+	events, total, err := h.service.ListAlertEvents(c.Request.Context(), opts)
+	if err != nil {
+		response.InternalError(c, "failed to get alert history")
+		return
+	}
+
+	// Map to response
+	items := make([]AlertEventResponse, len(events))
+	for i, e := range events {
+		items[i] = toAlertEventResponse(&e)
+	}
+
+	response.Paged(c, items, opts.Page, opts.PageSize, total)
+}
+
+// AcknowledgeAlertEvent handles PUT /api/v1/alerts/history/:id/acknowledge
+func (h *Handler) AcknowledgeAlertEvent(c *gin.Context) {
+	id := c.Param("id")
+	if id == "" {
+		response.ValidationErr(c, "id is required")
+		return
+	}
+
+	// Get user ID from context (set by auth middleware)
+	userID, exists := c.Get("user_id")
+	if !exists {
+		response.Unauthorized(c, "unauthorized")
+		return
+	}
+
+	event, err := h.service.AcknowledgeEvent(c.Request.Context(), id, userID.(string))
+	if err != nil {
+		if err == service.ErrAlertEventNotFound {
+			response.NotFound(c, "alert event not found")
+			return
+		}
+		response.InternalError(c, "failed to acknowledge alert event")
+		return
+	}
+
+	response.Success(c, toAlertEventResponse(event))
+}
+
+// BatchAcknowledgeAlertEvents handles POST /api/v1/alerts/history/acknowledge
+func (h *Handler) BatchAcknowledgeAlertEvents(c *gin.Context) {
+	var req struct {
+		IDs []string `json:"ids" binding:"required,min=1"`
+	}
+	if err := c.ShouldBindJSON(&req); err != nil {
+		response.ValidationErr(c, err.Error())
+		return
+	}
+
+	// Get user ID from context
+	userID, exists := c.Get("user_id")
+	if !exists {
+		response.Unauthorized(c, "unauthorized")
+		return
+	}
+
+	count, err := h.service.BatchAcknowledge(c.Request.Context(), req.IDs, userID.(string))
+	if err != nil {
+		response.InternalError(c, "failed to acknowledge alert events")
+		return
+	}
+
+	response.Success(c, gin.H{
+		"acknowledged": count,
+		"total":        len(req.IDs),
+	})
+}
+
+// toAlertEventResponse converts alert event to response.
+func toAlertEventResponse(e *domain.AlertEvent) AlertEventResponse {
+	resp := AlertEventResponse{
+		ID:          e.ID,
+		AgentID:     e.AgentID,
+		AgentName:   e.AgentName,
+		MetricValue: e.MetricValue,
+		Threshold:   e.Threshold,
+		Status:      e.Status,
+		Message:     e.Message,
+		TriggeredAt: e.TriggeredAt.Format("2006-01-02T15:04:05Z"),
+	}
+
+	if e.RuleID != nil {
+		resp.RuleID = *e.RuleID
+	}
+	resp.RuleName = e.RuleName
+	if e.ResolvedAt.Valid {
+		resp.ResolvedAt = e.ResolvedAt.Time.Format("2006-01-02T15:04:05Z")
+	}
+	if e.AcknowledgedBy != nil {
+		resp.AcknowledgedBy = *e.AcknowledgedBy
+	}
+	if e.AcknowledgedAt.Valid {
+		resp.AcknowledgedAt = e.AcknowledgedAt.Time.Format("2006-01-02T15:04:05Z")
+	}
+
+	return resp
+}
+
 // HealthCheck handles GET /health
 func (h *Handler) HealthCheck(c *gin.Context) {
 	c.JSON(http.StatusOK, gin.H{
@@ -304,7 +469,7 @@ func (h *Handler) RegisterRoutes(r *gin.RouterGroup) {
 		agents.GET("/:id/metrics/latest", h.GetLatestMetric)
 	}
 
-	// Alert rules
+	// Alert rules and history
 	alerts := r.Group("/alerts")
 	{
 		alerts.GET("/rules", h.ListAlertRules)
@@ -312,7 +477,17 @@ func (h *Handler) RegisterRoutes(r *gin.RouterGroup) {
 		alerts.GET("/rules/:id", h.GetAlertRule)
 		alerts.PUT("/rules/:id", h.UpdateAlertRule)
 		alerts.DELETE("/rules/:id", h.DeleteAlertRule)
+
+		// Alert history
+		alerts.GET("/history", h.GetAlertHistory)
+		alerts.PUT("/history/:id/acknowledge", h.AcknowledgeAlertEvent)
+		alerts.POST("/history/acknowledge", h.BatchAcknowledgeAlertEvents)
 	}
+}
+
+// RegisterDashboardWebSocket registers the dashboard WebSocket route.
+func RegisterDashboardWebSocket(r *gin.RouterGroup, wsHandler *DashboardWSHandler) {
+	r.GET("/ws/dashboard", wsHandler.Handle)
 }
 
 // toAlertRuleResponse converts alert rule to response.
