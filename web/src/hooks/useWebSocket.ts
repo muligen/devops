@@ -106,7 +106,7 @@ export function useWebSocket() {
 
     const wsProtocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:'
     const wsHost = window.location.host
-    const wsUrl = `${wsProtocol}//${wsHost}/ws/dashboard?token=${token}`
+    const wsUrl = `${wsProtocol}//${wsHost}/api/v1/ws/dashboard?token=${token}`
 
     try {
       const ws = new WebSocket(wsUrl)
