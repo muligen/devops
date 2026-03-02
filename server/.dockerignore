@@ -1,0 +1,17 @@
+*.exe
+*.exe~
+*.dll
+*.so
+*.dylib
+*.test
+*.out
+vendor/
+.git
+.gitignore
+*.md
+.env
+.env.*
+.vscode
+.idea
+*.log
+tmp/
