@@ -1,0 +1,229 @@
+// Package handler provides HTTP handlers for agent management.
+package handler
+
+import (
+	"strconv"
+
+	"github.com/agentteams/server/internal/modules/agent/domain"
+	"github.com/agentteams/server/internal/modules/agent/service"
+	"github.com/agentteams/server/internal/pkg/response"
+	"github.com/gin-gonic/gin"
+)
+
+// Handler handles agent HTTP requests.
+type Handler struct {
+	service *service.Service
+}
+
+// NewHandler creates a new agent handler.
+func NewHandler(service *service.Service) *Handler {
+	return &Handler{service: service}
+}
+
+// CreateAgentRequest represents create agent request.
+type CreateAgentRequest struct {
+	Name     string          `json:"name" binding:"required,min=1,max=100"`
+	Metadata domain.JSONB   `json:"metadata"`
+}
+
+// AgentResponse represents agent response.
+type AgentResponse struct {
+	ID         string          `json:"id"`
+	Name       string          `json:"name"`
+	Status     string          `json:"status"`
+	Version    string          `json:"version"`
+	Hostname   string          `json:"hostname"`
+	IPAddress  string          `json:"ip_address"`
+	OSInfo     string          `json:"os_info"`
+	Metadata   domain.JSONB    `json:"metadata"`
+	LastSeenAt *string         `json:"last_seen_at"`
+	CreatedAt  string          `json:"created_at"`
+}
+
+// CreateAgent handles agent creation.
+func (h *Handler) CreateAgent(c *gin.Context) {
+	var req CreateAgentRequest
+	if err := c.ShouldBindJSON(&req); err != nil {
+		response.ValidationErr(c, err.Error())
+		return
+	}
+
+	agent, token, err := h.service.CreateAgent(c.Request.Context(), req.Name, req.Metadata)
+	if err != nil {
+		if err == service.ErrAgentExists {
+			response.Conflict(c, "agent already exists")
+			return
+		}
+		response.InternalError(c, "failed to create agent")
+		return
+	}
+
+	response.Created(c, gin.H{
+		"id":         agent.ID,
+		"name":       agent.Name,
+		"token":      token, // Only returned on creation
+		"status":     agent.Status,
+		"created_at": agent.CreatedAt,
+	})
+}
+
+// ListAgents handles listing agents.
+func (h *Handler) ListAgents(c *gin.Context) {
+	page := 1
+	pageSize := 20
+	status := c.Query("status")
+
+	if p := c.Query("page"); p != "" {
+		if parsed, err := strconv.Atoi(p); err == nil && parsed > 0 {
+			page = parsed
+		}
+	}
+
+	if ps := c.Query("page_size"); ps != "" {
+		if parsed, err := strconv.Atoi(ps); err == nil && parsed > 0 && parsed <= 100 {
+			pageSize = parsed
+		}
+	}
+
+	agents, total, err := h.service.ListAgents(c.Request.Context(), page, pageSize, status)
+	if err != nil {
+		response.InternalError(c, "failed to list agents")
+		return
+	}
+
+	// Map to response
+	items := make([]AgentResponse, len(agents))
+	for i, agent := range agents {
+		items[i] = toAgentResponse(&agent)
+	}
+
+	response.Paged(c, items, page, pageSize, total)
+}
+
+// GetAgent handles getting agent by ID.
+func (h *Handler) GetAgent(c *gin.Context) {
+	id := c.Param("id")
+
+	agent, err := h.service.GetAgent(c.Request.Context(), id)
+	if err != nil {
+		if err == service.ErrAgentNotFound {
+			response.NotFound(c, "agent not found")
+			return
+		}
+		response.InternalError(c, "failed to get agent")
+		return
+	}
+
+	response.Success(c, toAgentResponse(agent))
+}
+
+// DeleteAgent handles agent deletion.
+func (h *Handler) DeleteAgent(c *gin.Context) {
+	id := c.Param("id")
+
+	if err := h.service.DeleteAgent(c.Request.Context(), id); err != nil {
+		if err == service.ErrAgentNotFound {
+			response.NotFound(c, "agent not found")
+			return
+		}
+		response.InternalError(c, "failed to delete agent")
+		return
+	}
+
+	response.Success(c, gin.H{
+		"message": "agent deleted",
+	})
+}
+
+// UpdateStatusRequest represents update status request.
+type UpdateStatusRequest struct {
+	Status string `json:"status" binding:"required,oneof=online offline maintenance"`
+}
+
+// UpdateStatus handles agent status update.
+func (h *Handler) UpdateStatus(c *gin.Context) {
+	id := c.Param("id")
+
+	var req UpdateStatusRequest
+	if err := c.ShouldBindJSON(&req); err != nil {
+		response.ValidationErr(c, err.Error())
+		return
+	}
+
+	if err := h.service.UpdateAgentStatus(c.Request.Context(), id, req.Status); err != nil {
+		if err == service.ErrAgentNotFound {
+			response.NotFound(c, "agent not found")
+			return
+		}
+		response.InternalError(c, "failed to update status")
+		return
+	}
+
+	response.Success(c, gin.H{
+		"message": "status updated",
+	})
+}
+
+// UpdateMetadataRequest represents update metadata request.
+type UpdateMetadataRequest struct {
+	Metadata domain.JSONB `json:"metadata" binding:"required"`
+}
+
+// UpdateMetadata handles agent metadata update.
+func (h *Handler) UpdateMetadata(c *gin.Context) {
+	id := c.Param("id")
+
+	var req UpdateMetadataRequest
+	if err := c.ShouldBindJSON(&req); err != nil {
+		response.ValidationErr(c, err.Error())
+		return
+	}
+
+	if err := h.service.UpdateAgentMetadata(c.Request.Context(), id, req.Metadata); err != nil {
+		if err == service.ErrAgentNotFound {
+			response.NotFound(c, "agent not found")
+			return
+		}
+		response.InternalError(c, "failed to update metadata")
+		return
+	}
+
+	response.Success(c, gin.H{
+		"message": "metadata updated",
+	})
+}
+
+// RegisterRoutes registers agent routes.
+func (h *Handler) RegisterRoutes(r *gin.RouterGroup) {
+	agents := r.Group("/agents")
+	{
+		agents.POST("", h.CreateAgent)
+		agents.GET("", h.ListAgents)
+		agents.GET("/:id", h.GetAgent)
+		agents.DELETE("/:id", h.DeleteAgent)
+		agents.PUT("/:id/status", h.UpdateStatus)
+		agents.PUT("/:id/metadata", h.UpdateMetadata)
+	}
+}
+
+// toAgentResponse converts agent to response.
+func toAgentResponse(agent *domain.Agent) AgentResponse {
+	var lastSeen *string
+	if agent.LastSeenAt != nil {
+		formatted := agent.LastSeenAt.Format("2006-01-02T15:04:05Z")
+		lastSeen = &formatted
+	}
+
+	return AgentResponse{
+		ID:         agent.ID,
+		Name:       agent.Name,
+		Status:     agent.Status,
+		Version:    agent.Version,
+		Hostname:   agent.Hostname,
+		IPAddress:  agent.IPAddress,
+		OSInfo:     agent.OSInfo,
+		Metadata:   agent.Metadata,
+		LastSeenAt: lastSeen,
+		CreatedAt:  agent.CreatedAt.Format("2006-01-02T15:04:05Z"),
+	}
+}

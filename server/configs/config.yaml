@@ -1,0 +1,56 @@
+server:
+  addr: ":8080"
+  read_timeout: "10s"
+  write_timeout: "10s"
+  idle_timeout: "60s"
+
+database:
+  host: "localhost"
+  port: 5432
+  user: "postgres"
+  password: "postgres"
+  name: "agentteams"
+  sslmode: "disable"
+  max_open_conns: 25
+  max_idle_conns: 5
+  conn_max_lifetime: "5m"
+
+redis:
+  host: "localhost"
+  port: 6379
+  password: ""
+  db: 0
+  pool_size: 10
+
+rabbitmq:
+  host: "localhost"
+  port: 5672
+  user: "guest"
+  password: "guest"
+  vhost: "/"
+
+minio:
+  endpoint: "localhost:9000"
+  access_key: "minioadmin"
+  secret_key: "minioadmin"
+  use_ssl: false
+  bucket: "agent-updates"
+
+jwt:
+  secret: "dev-secret-key-change-in-production"
+  expiry: "24h"
+  refresh_expiry: "168h"  # 7 days
+
+log:
+  level: "debug"
+  format: "json"
+  output: "stdout"
+
+agent:
+  heartbeat_timeout: "30s"
+  session_expiry: "5m"
+
+task:
+  max_concurrent: 10
+  default_timeout: "5m"
+  result_retention: "168h"  # 7 days in hours

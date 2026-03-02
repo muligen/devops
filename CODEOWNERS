@@ -1,0 +1,14 @@
+# AgentTeams - 代码所有者配置
+
+# Go Server 代码
+/server/** @server-team
+
+# C++ Agent 代码
+/agent/** @agent-team
+
+# 文档
+/docs/** @docs-team
+
+# 基础设施
+/deployments/** @devops-team
+/docker-compose.yaml @devops-team

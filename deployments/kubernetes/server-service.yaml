@@ -1,0 +1,32 @@
+apiVersion: v1
+kind: Service
+metadata:
+  name: agentteams-server
+  labels:
+    app: agentteams-server
+spec:
+  type: ClusterIP
+  ports:
+    - port: 80
+      targetPort: 8080
+      protocol: TCP
+      name: http
+  selector:
+    app: agentteams-server
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: agentteams-server-headless
+  labels:
+    app: agentteams-server
+spec:
+  type: ClusterIP
+  clusterIP: None
+  ports:
+    - port: 80
+      targetPort: 8080
+      protocol: TCP
+      name: http
+  selector:
+    app: agentteams-server

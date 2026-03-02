@@ -1,0 +1,78 @@
+# Binaries
+*.exe
+*.exe~
+*.dll
+*.so
+*.dylib
+*.o
+*.obj
+
+# Build directories
+agent/build/
+agent/.conan/
+server/ws_client.exe
+
+# IDE
+.idea/
+.vscode/
+*.suo
+*.user
+*.userosscache
+*.sln.docstates
+
+# Go
+server/server
+server/tmp/
+*.test
+*.out
+go.sum.bak
+
+# C++ / CMake
+CMakeCache.txt
+CMakeFiles/
+cmake_install.cmake
+Makefile
+*.vcxproj
+*.vcxproj.filters
+*.vcxproj.user
+
+# Dependencies
+vendor/
+node_modules/
+
+# Config with secrets
+*.env
+*.env.local
+*.env.*.local
+configs/config.prod.yaml
+
+# Logs
+*.log
+logs/
+
+# Database
+*.db
+*.sqlite
+
+# OS files
+.DS_Store
+Thumbs.db
+desktop.ini
+
+# Test coverage
+coverage.txt
+coverage.html
+*.coverprofile
+
+# Temporary files
+*.tmp
+*.temp
+*.swp
+*.swo
+*~
+
+# MinIO data
+minio_data/
+
+# Claude Code
+.claude/

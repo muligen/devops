@@ -1,0 +1,41 @@
+# AgentTeams Agent Configuration
+# This is a template file. Copy to agent.yaml and customize.
+
+# Agent identification
+agent:
+  id: ""  # Will be auto-generated if empty
+  token: ""  # Registration token from server
+  server_url: "wss://server.example.com:443/api/v1/agent/ws"
+
+# Connection settings
+connection:
+  retry_interval: 5s
+  max_retry_interval: 60s
+  ping_interval: 10s
+  pong_timeout: 5s
+
+# Heartbeat settings
+heartbeat:
+  interval: 1s
+
+# Metrics collection
+metrics:
+  interval: 1m
+
+# Task execution
+task:
+  max_concurrent: 4
+  queue_size: 100
+  default_timeout: 5m
+
+# Auto-update
+update:
+  check_interval: 1h
+  idle_required: true
+
+# Logging
+logging:
+  level: info  # trace, debug, info, warn, error
+  file: "C:/ProgramData/AgentTeams/logs/agent.log"
+  max_size: 100MB
+  max_files: 5

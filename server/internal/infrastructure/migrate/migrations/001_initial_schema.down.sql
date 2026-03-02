@@ -1,0 +1,8 @@
+-- +migrate Down
+DROP TABLE IF EXISTS audit_logs;
+DROP TABLE IF EXISTS alert_rules;
+DROP TABLE IF EXISTS versions;
+DROP TABLE IF EXISTS agent_metrics;
+DROP TABLE IF EXISTS tasks;
+DROP TABLE IF EXISTS agents;
+DROP TABLE IF EXISTS users;

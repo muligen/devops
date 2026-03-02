@@ -1,0 +1,77 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<Wix xmlns="http://schemas.microsoft.com/wix/2006/wi">
+    <?define ProductName = "AgentTeams Agent" ?>
+    <?define ProductVersion = "1.0.0" ?>
+    <?define Manufacturer = "AgentTeams" ?>
+
+    <Product Id="*" Name="$(var.ProductName)" Language="1033"
+             Version="$(var.ProductVersion)" Manufacturer="$(var.Manufacturer)"
+             UpgradeCode="E4F8A7C1-2B3D-4E5F-8A9C-1D2E3F4A5B6C">
+
+        <Package InstallerVersion="400" Compressed="yes" InstallScope="perMachine"
+                 Description="$(var.ProductName) Installer" />
+
+        <MajorUpgrade DowngradeErrorMessage="A newer version of [ProductName] is already installed." />
+        <MediaTemplate EmbedCab="yes" />
+
+        <!-- Features -->
+        <Feature Id="ProductFeature" Title="$(var.ProductName)" Level="1">
+            <ComponentGroupRef Id="ProductComponents" />
+            <ComponentGroupRef Id="ConfigComponents" />
+        </Feature>
+
+        <!-- Directories -->
+        <Directory Id="TARGETDIR" Name="SourceDir">
+            <Directory Id="ProgramFilesFolder">
+                <Directory Id="INSTALLFOLDER" Name="AgentTeams" />
+            </Directory>
+            <Directory Id="CommonAppDataFolder">
+                <Directory Id="DataFolder" Name="AgentTeams">
+                    <Directory Id="LogsFolder" Name="logs" />
+                </Directory>
+            </Directory>
+        </Directory>
+
+        <!-- Product Components -->
+        <ComponentGroup Id="ProductComponents" Directory="INSTALLFOLDER">
+            <Component Id="MainExecutable" Guid="*">
+                <File Id="AgentExe" Name="agent.exe" Source="bin/agent.exe" KeyPath="yes" />
+                <ServiceInstall Id="ServiceInstaller" Name="AgentTeams"
+                                DisplayName="$(var.ProductName)"
+                                Description="AgentTeams Windows Agent Service"
+                                Type="ownProcess" Start="auto" ErrorControl="normal" />
+                <ServiceControl Id="ServiceControl" Name="AgentTeams"
+                                Stop="both" Remove="uninstall" Wait="yes" />
+            </Component>
+
+            <Component Id="HeartbeatWorker" Guid="*">
+                <File Id="HeartbeatExe" Name="worker_heartbeat.exe" Source="bin/worker_heartbeat.exe" />
+            </Component>
+
+            <Component Id="TaskWorker" Guid="*">
+                <File Id="TaskExe" Name="worker_task.exe" Source="bin/worker_task.exe" />
+            </Component>
+        </ComponentGroup>
+
+        <!-- Config Components -->
+        <ComponentGroup Id="ConfigComponents" Directory="DataFolder">
+            <Component Id="ConfigFile" Guid="*">
+                <File Id="ConfigYaml" Name="agent.yaml" Source="config/agent.yaml" KeyPath="yes" />
+            </Component>
+
+            <Component Id="LogsDirectory" Guid="*">
+                <CreateFolder />
+            </Component>
+        </ComponentGroup>
+
+        <!-- WixUI for installation dialogs -->
+        <UIRef Id="WixUI_InstallDir" />
+
+        <!-- Properties -->
+        <Property Id="WIXUI_INSTALLDIR" Value="INSTALLFOLDER" />
+        <Property Id="ARPPRODUCTICON" Value="ProductIcon" />
+
+        <Icon Id="ProductIcon" SourceFile="resources/agent.ico" />
+
+    </Product>
+</Wix>

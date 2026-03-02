@@ -1,0 +1,20 @@
+# Air configuration for hot reload
+root = "."
+tmp_dir = "tmp"
+
+[build]
+cmd = "go build -o ./tmp/server ./cmd/server"
+bin = "./tmp/server"
+full_bin = "./tmp/server"
+include_ext = ["go", "yaml"]
+exclude_dir = ["tmp", "vendor"]
+delay = 1000
+
+[log]
+time = false
+
+[color]
+main = "magenta"
+watcher = "cyan"
+build = "yellow"
+runner = "green"

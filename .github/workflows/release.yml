@@ -1,0 +1,116 @@
+name: Release
+
+on:
+  push:
+    tags:
+      - 'v*'
+
+jobs:
+  build-server:
+    name: Build Server
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Setup Go
+        uses: actions/setup-go@v5
+        with:
+          go-version: '1.21'
+
+      - name: Build
+        working-directory: server
+        run: |
+          CGO_ENABLED=0 GOOS=linux GOARCH=amd64 go build \
+            -ldflags="-w -s -X main.Version=${{ github.ref_name }} -X main.BuildDate=$(date -u +%Y-%m-%dT%H:%M:%SZ) -X main.GitCommit=${{ github.sha }}" \
+            -o server-linux-amd64 ./cmd/server
+
+          CGO_ENABLED=0 GOOS=windows GOARCH=amd64 go build \
+            -ldflags="-w -s -X main.Version=${{ github.ref_name }} -X main.BuildDate=$(date -u +%Y-%m-%dT%H:%M:%SZ) -X main.GitCommit=${{ github.sha }}" \
+            -o server-windows-amd64.exe ./cmd/server
+
+      - name: Upload artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: server-binaries
+          path: |
+            server/server-linux-amd64
+            server/server-windows-amd64.exe
+
+  build-agent:
+    name: Build Agent
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Setup MSVC
+        uses: ilammy/msvc-dev-cmd@v1
+
+      - name: Install Conan
+        run: pip install conan
+
+      - name: Configure Conan
+        run: conan profile detect --force
+
+      - name: Install dependencies
+        working-directory: agent
+        run: conan install . --build=missing -s build_type=Release
+
+      - name: Configure CMake
+        working-directory: agent
+        run: cmake --preset conan-release
+
+      - name: Build
+        working-directory: agent
+        run: cmake --build --preset conan-release
+
+      - name: Package
+        working-directory: agent/build/Release
+        run: |
+          mkdir package
+          copy *.exe package/
+          copy ..\..\..\agent.yaml package/ 2>nul || echo No config template
+
+      - name: Upload artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: agent-binaries
+          path: agent/build/Release/package/
+
+  release:
+    name: Create Release
+    needs: [build-server, build-agent]
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Download Server artifacts
+        uses: actions/download-artifact@v4
+        with:
+          name: server-binaries
+          path: release/
+
+      - name: Download Agent artifacts
+        uses: actions/download-artifact@v4
+        with:
+          name: agent-binaries
+          path: release/agent/
+
+      - name: Create archives
+        working-directory: release
+        run: |
+          tar -czvf agentteams-server-linux-amd64.tar.gz server-linux-amd64
+          zip agentteams-server-windows-amd64.zip server-windows-amd64.exe
+          cd agent && zip ../agentteams-agent-windows.zip *.exe
+
+      - name: Create Release
+        uses: softprops/action-gh-release@v1
+        with:
+          files: |
+            release/agentteams-server-linux-amd64.tar.gz
+            release/agentteams-server-windows-amd64.zip
+            release/agentteams-agent-windows.zip
+          generate_release_notes: true
+          draft: false
+          prerelease: ${{ contains(github.ref_name, '-') }}
