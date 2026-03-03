@@ -4,16 +4,25 @@
 #include <agent/process_manager.hpp>
 #include <agent/websocket_client.hpp>
 #include <agent/common/types.hpp>
+#include <agent/heartbeat_worker.hpp>
+#include <nlohmann/json.hpp>
 
 #ifdef _WIN32
 #include <windows.h>
 #include <winsvc.h>
+#include <pdh.h>
+#include <pdhmsg.h>
+#include <psapi.h>
+#pragma comment(lib, "pdh.lib")
 #endif
 
 #include <atomic>
 #include <memory>
 #include <string>
 #include <thread>
+#include <chrono>
+#include <sstream>
+#include <iomanip>
 
 namespace agent {
 
@@ -42,6 +51,123 @@ struct ServiceContext {
 };
 
 std::unique_ptr<ServiceContext> g_context;
+
+// Helper functions for system metrics
+#ifdef _WIN32
+double GetCpuUsage() {
+    static PDH_HQUERY cpuQuery = nullptr;
+    static PDH_HCOUNTER cpuCounter = nullptr;
+
+    if (cpuQuery == nullptr) {
+        PdhOpenQuery(nullptr, 0, &cpuQuery);
+        PdhAddEnglishCounterA(cpuQuery, "\\Processor(_Total)\\% Processor Time", 0, &cpuCounter);
+        PdhCollectQueryData(cpuQuery);
+        return 0.0;
+    }
+
+    PdhCollectQueryData(cpuQuery);
+    PDH_FMT_COUNTERVALUE counterVal;
+    PdhGetFormattedCounterValue(cpuCounter, PDH_FMT_DOUBLE, nullptr, &counterVal);
+    return counterVal.doubleValue;
+}
+
+uint64_t GetTotalMemory() {
+    MEMORYSTATUSEX memInfo;
+    memInfo.dwLength = sizeof(MEMORYSTATUSEX);
+    GlobalMemoryStatusEx(&memInfo);
+    return memInfo.ullTotalPhys;
+}
+
+uint64_t GetUsedMemory() {
+    MEMORYSTATUSEX memInfo;
+    memInfo.dwLength = sizeof(MEMORYSTATUSEX);
+    GlobalMemoryStatusEx(&memInfo);
+    return memInfo.ullTotalPhys - memInfo.ullAvailPhys;
+}
+
+double GetMemoryPercent() {
+    MEMORYSTATUSEX memInfo;
+    memInfo.dwLength = sizeof(MEMORYSTATUSEX);
+    GlobalMemoryStatusEx(&memInfo);
+    return memInfo.dwMemoryLoad;
+}
+
+uint64_t GetTotalDisk() {
+    ULARGE_INTEGER freeBytesAvailable, totalNumberOfBytes, totalNumberOfFreeBytes;
+    GetDiskFreeSpaceExA("C:\\", &freeBytesAvailable, &totalNumberOfBytes, &totalNumberOfFreeBytes);
+    return totalNumberOfBytes.QuadPart;
+}
+
+uint64_t GetUsedDisk() {
+    ULARGE_INTEGER freeBytesAvailable, totalNumberOfBytes, totalNumberOfFreeBytes;
+    GetDiskFreeSpaceExA("C:\\", &freeBytesAvailable, &totalNumberOfBytes, &totalNumberOfFreeBytes);
+    return totalNumberOfBytes.QuadPart - totalNumberOfFreeBytes.QuadPart;
+}
+
+double GetDiskPercent() {
+    ULARGE_INTEGER freeBytesAvailable, totalNumberOfBytes, totalNumberOfFreeBytes;
+    GetDiskFreeSpaceExA("C:\\", &freeBytesAvailable, &totalNumberOfBytes, &totalNumberOfFreeBytes);
+    if (totalNumberOfBytes.QuadPart == 0) return 0.0;
+    return 100.0 * (totalNumberOfBytes.QuadPart - totalNumberOfFreeBytes.QuadPart) / totalNumberOfBytes.QuadPart;
+}
+
+uint64_t GetSystemUptime() {
+    return GetTickCount64() / 1000;
+}
+#else
+double GetCpuUsage() { return 0.0; }
+uint64_t GetTotalMemory() { return 0; }
+uint64_t GetUsedMemory() { return 0; }
+double GetMemoryPercent() { return 0.0; }
+uint64_t GetTotalDisk() { return 0; }
+uint64_t GetUsedDisk() { return 0; }
+double GetDiskPercent() { return 0.0; }
+uint64_t GetSystemUptime() { return 0; }
+#endif
+
+// Send heartbeat message
+void SendHeartbeat() {
+    if (!g_context || !g_context->ws_client || !g_context->ws_connected) {
+        return;
+    }
+
+    nlohmann::json msg;
+    msg["type"] = "heartbeat";
+    msg["data"] = {
+        {"timestamp", std::chrono::duration_cast<std::chrono::seconds>(
+            std::chrono::system_clock::now().time_since_epoch()).count()}
+    };
+
+    g_context->ws_client->Send(msg.dump());
+}
+
+// Send metrics message
+void SendMetrics() {
+    if (!g_context || !g_context->ws_client || !g_context->ws_connected) {
+        return;
+    }
+
+    nlohmann::json msg;
+    msg["type"] = "metrics";
+    msg["data"] = {
+        {"cpu_usage", GetCpuUsage()},
+        {"memory", {
+            {"total", GetTotalMemory()},
+            {"used", GetUsedMemory()},
+            {"percent", GetMemoryPercent()}
+        }},
+        {"disk", {
+            {"total", GetTotalDisk()},
+            {"used", GetUsedDisk()},
+            {"percent", GetDiskPercent()}
+        }},
+        {"uptime", GetSystemUptime()}
+    };
+
+    g_context->ws_client->Send(msg.dump());
+    LOG_DEBUG("Sent metrics: cpu={:.1f}%, mem={:.1f}%, disk={:.1f}%",
+              GetCpuUsage(), GetMemoryPercent(), GetDiskPercent());
+}
 
 void ServiceRun(const Config& config) {
     LOG_INFO("Agent starting...");
@@ -134,11 +260,31 @@ void ServiceRun(const Config& config) {
 
     LOG_INFO("Agent started successfully");
 
+    // Timing for heartbeat and metrics
+    auto last_heartbeat = std::chrono::steady_clock::now();
+    auto last_metrics = std::chrono::steady_clock::now();
+    const auto heartbeat_interval = std::chrono::seconds(10);  // Send heartbeat every 10s
+    const auto metrics_interval = std::chrono::seconds(30);    // Send metrics every 30s
+
     // Main service loop
     while (g_running) {
+        auto now = std::chrono::steady_clock::now();
+
+        // Send heartbeat periodically
+        if (now - last_heartbeat >= heartbeat_interval) {
+            SendHeartbeat();
+            last_heartbeat = now;
+        }
+
+        // Send metrics periodically
+        if (now - last_metrics >= metrics_interval) {
+            SendMetrics();
+            last_metrics = now;
+        }
+
         // Monitor worker processes
         g_context->process_manager->Monitor();
-        std::this_thread::sleep_for(std::chrono::seconds(5));
+        std::this_thread::sleep_for(std::chrono::seconds(1));
     }
 
     // Shutdown
