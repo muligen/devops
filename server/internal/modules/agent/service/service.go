@@ -121,11 +121,19 @@ func (r *Repository) ListWithSort(ctx context.Context, opts ListOptions) ([]doma
 	var agents []domain.Agent
 	var total int64
 
-	query := r.db.WithContext(ctx).Model(&domain.Agent{}).Where("agents.deleted_at IS NULL")
+	baseQuery := r.db.WithContext(ctx).Model(&domain.Agent{}).Where("agents.deleted_at IS NULL")
 
 	if opts.Status != "" {
-		query = query.Where("agents.status = ?", opts.Status)
+		baseQuery = baseQuery.Where("agents.status = ?", opts.Status)
 	}
+
+	// Count total before adding Select/Joins
+	if err := baseQuery.Count(&total).Error; err != nil {
+		return nil, 0, err
+	}
+
+	// Build query with sorting
+	query := baseQuery
 
 	// Handle resource sorting by joining with latest metrics
 	if opts.Sort == "cpu_usage" || opts.Sort == "memory_percent" || opts.Sort == "disk_percent" {
@@ -149,10 +157,6 @@ func (r *Repository) ListWithSort(ctx context.Context, opts ListOptions) ([]doma
 			order = "ASC"
 		}
 		query = query.Order("agents.created_at " + order)
-	}
-
-	if err := query.Count(&total).Error; err != nil {
-		return nil, 0, err
 	}
 
 	offset := (opts.Page - 1) * opts.PageSize

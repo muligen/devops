@@ -265,6 +265,10 @@ func (app *Application) setupRouter() *gin.Engine {
 	monitorSvc := monitorService.NewService(monitorRepo)
 	monitorSvc.SetMQ(app.rabbitMQ)
 
+	// Initialize alert event repository
+	alertEventRepo := monitorService.NewAlertEventRepository(app.db.DB)
+	monitorSvc.SetAlertEventRepository(alertEventRepo)
+
 	// Wire WebSocket handler to monitor service for metrics handling
 	wsHandler.SetMetricsService(monitorSvc)
 

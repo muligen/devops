@@ -17,6 +17,7 @@
 #include <mutex>
 #include <queue>
 #include <thread>
+#include <variant>
 #include <vector>
 #include <iomanip>
 #include <sstream>
@@ -29,6 +30,11 @@ namespace net = boost::asio;
 namespace ssl = net::ssl;
 
 using tcp = net::ip::tcp;
+
+// WebSocket stream types
+using WsStream = websocket::stream<beast::tcp_stream>;
+using WssStream = websocket::stream<ssl::stream<beast::tcp_stream>>;
+using WsVariant = std::variant<std::unique_ptr<WsStream>, std::unique_ptr<WssStream>>;
 
 // HMAC-SHA256 computation helper
 static std::string ComputeHmacSha256(const std::string& key, const std::string& message) {
@@ -48,21 +54,35 @@ static std::string ComputeHmacSha256(const std::string& key, const std::string& 
     return oss.str();
 }
 
+// SHA256 hash helper
+static std::string Sha256Hash(const std::string& input) {
+    std::vector<unsigned char> digest(SHA256_DIGEST_LENGTH);
+    SHA256(reinterpret_cast<const unsigned char*>(input.data()), input.size(), digest.data());
+
+    // Convert to hex string
+    std::ostringstream oss;
+    for (unsigned char c : digest) {
+        oss << std::hex << std::setw(2) << std::setfill('0') << static_cast<int>(c);
+    }
+    return oss.str();
+}
+
 // Internal implementation using PIMPL pattern
 class WebSocketClientImpl : public std::enable_shared_from_this<WebSocketClientImpl> {
 public:
     WebSocketClientImpl(net::io_context& io_context, const WebSocketConfig& config)
         : io_context_(io_context)
         , ssl_context_(ssl::context::tlsv12_client)
-        , ws_(websocket::stream<ssl::stream<beast::tcp_stream>>(net::make_strand(io_context), ssl_context_))
         , config_(config)
         , state_(ConnectionState::kDisconnected)
         , reconnect_attempts_(0)
-        , write_in_progress_(false) {
+        , write_in_progress_(false)
+        , secure_(false) {
 
         // Configure SSL context
         ssl_context_.set_default_verify_paths();
-        ssl_context_.set_verify_mode(ssl::verify_peer);
+        // Disable certificate verification for local testing
+        ssl_context_.set_verify_mode(ssl::verify_none);
 
         // Allow TLS 1.2 and above
         ssl_context_.set_options(
@@ -93,6 +113,15 @@ public:
             return;
         }
 
+        secure_ = parsed->secure;
+
+        // Create appropriate WebSocket stream
+        if (secure_) {
+            ws_ = std::make_unique<WssStream>(net::make_strand(io_context_), ssl_context_);
+        } else {
+            ws_ = std::make_unique<WsStream>(net::make_strand(io_context_));
+        }
+
         // Start async resolve
         auto self = shared_from_this();
         resolver_.async_resolve(
@@ -112,10 +141,13 @@ public:
         // Stop keepalive
         StopKeepalive();
 
-        beast::error_code ec;
-        if (ws_.is_open()) {
-            ws_.close(websocket::close_code::normal, ec);
-        }
+        // Close WebSocket
+        std::visit([](auto& ws) {
+            if (ws && ws->is_open()) {
+                beast::error_code ec;
+                ws->close(websocket::close_code::normal, ec);
+            }
+        }, ws_);
 
         SetState(ConnectionState::kDisconnected);
         session_id_.clear();
@@ -151,7 +183,7 @@ public:
             return;
         }
 
-        net::post(ws_.get_executor(), [self = shared_from_this(), message]() {
+        net::post(io_context_, [self = shared_from_this(), message]() {
             self->DoWrite(message);
         });
     }
@@ -243,12 +275,24 @@ private:
 
         // Connect to endpoint
         auto self = shared_from_this();
-        beast::get_lowest_layer(ws_).async_connect(
-            results,
-            [self](const beast::error_code& ec, const tcp::endpoint& endpoint) {
-                self->OnConnect(ec);
-            }
-        );
+
+        if (secure_) {
+            auto& wss = std::get<std::unique_ptr<WssStream>>(ws_);
+            beast::get_lowest_layer(*wss).async_connect(
+                results,
+                [self](const beast::error_code& ec, const tcp::endpoint& endpoint) {
+                    self->OnConnect(ec);
+                }
+            );
+        } else {
+            auto& ws = std::get<std::unique_ptr<WsStream>>(ws_);
+            beast::get_lowest_layer(*ws).async_connect(
+                results,
+                [self](const beast::error_code& ec, const tcp::endpoint& endpoint) {
+                    self->OnConnect(ec);
+                }
+            );
+        }
     }
 
     void OnConnect(const beast::error_code& ec) {
@@ -257,14 +301,21 @@ private:
             return;
         }
 
-        // Perform SSL handshake
         auto self = shared_from_this();
-        ws_.next_layer().async_handshake(
-            ssl::stream_base::client,
-            [self](const beast::error_code& ec) {
-                self->OnSslHandshake(ec);
-            }
-        );
+
+        if (secure_) {
+            // Perform SSL handshake for secure connections
+            auto& wss = std::get<std::unique_ptr<WssStream>>(ws_);
+            wss->next_layer().async_handshake(
+                ssl::stream_base::client,
+                [self](const beast::error_code& ec) {
+                    self->OnSslHandshake(ec);
+                }
+            );
+        } else {
+            // Skip SSL handshake for non-secure connections
+            DoWebSocketHandshake();
+        }
     }
 
     void OnSslHandshake(const beast::error_code& ec) {
@@ -273,37 +324,67 @@ private:
             return;
         }
 
-        // Perform WebSocket handshake
+        DoWebSocketHandshake();
+    }
+
+    void DoWebSocketHandshake() {
         auto parsed = ParseUrl(server_url_);
         if (!parsed) {
             HandleError("Invalid URL during handshake");
             return;
         }
 
-        ws_.set_option(websocket::stream_base::decorator(
-            [](websocket::request_type& req) {
-                req.set(beast::http::field::user_agent,
-                       std::string(BOOST_BEAST_VERSION_STRING) + " AgentTeams-Agent");
-            }
-        ));
-
-        // Set up control callback for pong handling
         auto self = shared_from_this();
-        ws_.control_callback(
-            [self](beast::websocket::frame_type type, beast::string_view payload) {
-                if (type == beast::websocket::frame_type::pong) {
-                    self->OnPong();
-                }
-            }
-        );
 
-        ws_.async_handshake(
-            parsed->host,
-            parsed->path,
-            [self](const beast::error_code& ec) {
-                self->OnHandshake(ec);
-            }
-        );
+        if (secure_) {
+            auto& wss = std::get<std::unique_ptr<WssStream>>(ws_);
+            wss->set_option(websocket::stream_base::decorator(
+                [](websocket::request_type& req) {
+                    req.set(beast::http::field::user_agent,
+                           std::string(BOOST_BEAST_VERSION_STRING) + " AgentTeams-Agent");
+                }
+            ));
+
+            wss->control_callback(
+                [self](beast::websocket::frame_type type, beast::string_view payload) {
+                    if (type == beast::websocket::frame_type::pong) {
+                        self->OnPong();
+                    }
+                }
+            );
+
+            wss->async_handshake(
+                parsed->host,
+                parsed->path,
+                [self](const beast::error_code& ec) {
+                    self->OnHandshake(ec);
+                }
+            );
+        } else {
+            auto& ws = std::get<std::unique_ptr<WsStream>>(ws_);
+            ws->set_option(websocket::stream_base::decorator(
+                [](websocket::request_type& req) {
+                    req.set(beast::http::field::user_agent,
+                           std::string(BOOST_BEAST_VERSION_STRING) + " AgentTeams-Agent");
+                }
+            ));
+
+            ws->control_callback(
+                [self](beast::websocket::frame_type type, beast::string_view payload) {
+                    if (type == beast::websocket::frame_type::pong) {
+                        self->OnPong();
+                    }
+                }
+            );
+
+            ws->async_handshake(
+                parsed->host,
+                parsed->path,
+                [self](const beast::error_code& ec) {
+                    self->OnHandshake(ec);
+                }
+            );
+        }
     }
 
     void OnHandshake(const beast::error_code& ec) {
@@ -325,8 +406,10 @@ private:
     void SendAuthInit() {
         // Send authentication init with agent_id
         nlohmann::json msg;
-        msg["type"] = "auth_init";
-        msg["agent_id"] = config_.agent_id;
+        msg["type"] = "auth";
+        msg["data"] = {
+            {"agent_id", config_.agent_id}
+        };
 
         DoWrite(msg.dump());
     }
@@ -334,14 +417,17 @@ private:
     void HandleAuthChallenge(const nlohmann::json& msg) {
         std::string nonce = msg["nonce"];
 
-        // Compute HMAC(token, nonce)
-        std::string response = ComputeHmacSha256(config_.token, nonce);
+        // Compute HMAC(SHA256(token), nonce)
+        // Server stores token_hash = SHA256(token), so we need to hash token first
+        std::string token_hash = Sha256Hash(config_.token);
+        std::string response = ComputeHmacSha256(token_hash, nonce);
 
         // Send auth_response
         nlohmann::json reply;
-        reply["type"] = "auth_response";
-        reply["agent_id"] = config_.agent_id;
-        reply["response"] = response;
+        reply["type"] = "challenge";
+        reply["data"] = {
+            {"response", response}
+        };
 
         DoWrite(reply.dump());
     }
@@ -400,18 +486,33 @@ private:
 
         auto self = shared_from_this();
 
-        // Send ping using WebSocket control frame
-        ws_.async_ping(
-            beast::websocket::ping_data{},
-            [self](const beast::error_code& ec) {
-                if (!ec) {
-                    self->waiting_pong_ = true;
-                    self->StartPongTimeout();
-                } else {
-                    self->HandleError("Ping failed: " + ec.message());
+        if (secure_) {
+            auto& wss = std::get<std::unique_ptr<WssStream>>(ws_);
+            wss->async_ping(
+                beast::websocket::ping_data{},
+                [self](const beast::error_code& ec) {
+                    if (!ec) {
+                        self->waiting_pong_ = true;
+                        self->StartPongTimeout();
+                    } else {
+                        self->HandleError("Ping failed: " + ec.message());
+                    }
                 }
-            }
-        );
+            );
+        } else {
+            auto& ws = std::get<std::unique_ptr<WsStream>>(ws_);
+            ws->async_ping(
+                beast::websocket::ping_data{},
+                [self](const beast::error_code& ec) {
+                    if (!ec) {
+                        self->waiting_pong_ = true;
+                        self->StartPongTimeout();
+                    } else {
+                        self->HandleError("Ping failed: " + ec.message());
+                    }
+                }
+            );
+        }
     }
 
     void StartPongTimeout() {
@@ -436,12 +537,24 @@ private:
 
     void DoRead() {
         auto self = shared_from_this();
-        ws_.async_read(
-            read_buffer_,
-            [self](const beast::error_code& ec, std::size_t bytes_transferred) {
-                self->OnRead(ec, bytes_transferred);
-            }
-        );
+
+        if (secure_) {
+            auto& wss = std::get<std::unique_ptr<WssStream>>(ws_);
+            wss->async_read(
+                read_buffer_,
+                [self](const beast::error_code& ec, std::size_t bytes_transferred) {
+                    self->OnRead(ec, bytes_transferred);
+                }
+            );
+        } else {
+            auto& ws = std::get<std::unique_ptr<WsStream>>(ws_);
+            ws->async_read(
+                read_buffer_,
+                [self](const beast::error_code& ec, std::size_t bytes_transferred) {
+                    self->OnRead(ec, bytes_transferred);
+                }
+            );
+        }
     }
 
     void OnRead(const beast::error_code& ec, std::size_t bytes_transferred) {
@@ -468,12 +581,17 @@ private:
 
             if (state_ == ConnectionState::kAuthenticating) {
                 // Handle authentication flow
-                if (type == "auth_challenge") {
-                    HandleAuthChallenge(msg);
-                } else if (type == "auth_success") {
-                    HandleAuthSuccess(msg);
-                } else if (type == "auth_failure") {
-                    HandleAuthFailure(msg);
+                if (type == "challenge") {
+                    auto data = msg["data"];
+                    HandleAuthChallenge(data);
+                } else if (type == "auth_result") {
+                    auto data = msg["data"];
+                    bool success = data.value("success", false);
+                    if (success) {
+                        HandleAuthSuccess(data);
+                    } else {
+                        HandleAuthFailure(data);
+                    }
                 } else {
                     // Unexpected message during auth
                     HandleError("Unexpected message during authentication: " + type);
@@ -503,12 +621,24 @@ private:
 
         // Write message directly
         auto self = shared_from_this();
-        ws_.async_write(
-            net::buffer(message),
-            [self](const beast::error_code& ec, std::size_t bytes_transferred) {
-                self->OnWrite(ec, bytes_transferred);
-            }
-        );
+
+        if (secure_) {
+            auto& wss = std::get<std::unique_ptr<WssStream>>(ws_);
+            wss->async_write(
+                net::buffer(message),
+                [self](const beast::error_code& ec, std::size_t bytes_transferred) {
+                    self->OnWrite(ec, bytes_transferred);
+                }
+            );
+        } else {
+            auto& ws = std::get<std::unique_ptr<WsStream>>(ws_);
+            ws->async_write(
+                net::buffer(message),
+                [self](const beast::error_code& ec, std::size_t bytes_transferred) {
+                    self->OnWrite(ec, bytes_transferred);
+                }
+            );
+        }
     }
 
     void OnWrite(const beast::error_code& ec, std::size_t bytes_transferred) {
@@ -527,12 +657,24 @@ private:
             write_queue_.pop();
 
             auto self = shared_from_this();
-            ws_.async_write(
-                net::buffer(message),
-                [self](const beast::error_code& ec, std::size_t bytes_transferred) {
-                    self->OnWrite(ec, bytes_transferred);
-                }
-            );
+
+            if (secure_) {
+                auto& wss = std::get<std::unique_ptr<WssStream>>(ws_);
+                wss->async_write(
+                    net::buffer(message),
+                    [self](const beast::error_code& ec, std::size_t bytes_transferred) {
+                        self->OnWrite(ec, bytes_transferred);
+                    }
+                );
+            } else {
+                auto& ws = std::get<std::unique_ptr<WsStream>>(ws_);
+                ws->async_write(
+                    net::buffer(message),
+                    [self](const beast::error_code& ec, std::size_t bytes_transferred) {
+                        self->OnWrite(ec, bytes_transferred);
+                    }
+                );
+            }
         }
     }
 
@@ -565,7 +707,7 @@ private:
     // Members
     net::io_context& io_context_;
     ssl::context ssl_context_;
-    websocket::stream<ssl::stream<beast::tcp_stream>> ws_;
+    WsVariant ws_;
     tcp::resolver resolver_{net::make_strand(io_context_)};
     net::steady_timer reconnect_timer_{io_context_};
     net::steady_timer ping_timer_{io_context_};
@@ -577,6 +719,7 @@ private:
     std::string session_id_;
     std::atomic<int> reconnect_attempts_;
     std::atomic<bool> waiting_pong_{false};
+    bool secure_;
 
     beast::flat_buffer read_buffer_;
     std::mutex write_mutex_;

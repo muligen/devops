@@ -2,6 +2,7 @@
 #include <agent/config.hpp>
 #include <agent/logger.hpp>
 #include <agent/process_manager.hpp>
+#include <agent/websocket_client.hpp>
 #include <agent/common/types.hpp>
 
 #ifdef _WIN32
@@ -12,6 +13,7 @@
 #include <atomic>
 #include <memory>
 #include <string>
+#include <thread>
 
 namespace agent {
 
@@ -35,6 +37,8 @@ void ServiceReportStatus(DWORD current_state, DWORD win32_exit_code, DWORD wait_
 struct ServiceContext {
     Config config;
     std::unique_ptr<ProcessManager> process_manager;
+    std::unique_ptr<WebSocketClient> ws_client;
+    std::atomic<bool> ws_connected{false};
 };
 
 std::unique_ptr<ServiceContext> g_context;
@@ -61,6 +65,67 @@ void ServiceRun(const Config& config) {
             }
         });
 
+    // Initialize WebSocket client
+    WebSocketConfig ws_config;
+    ws_config.server_url = config.agent.server_url;
+    ws_config.agent_id = config.agent.id;
+    ws_config.token = config.agent.token;
+    ws_config.connect_timeout = config.connection.retry_interval;
+    ws_config.reconnect_base_delay = config.connection.retry_interval;
+    ws_config.reconnect_max_delay = config.connection.max_retry_interval;
+    ws_config.ping_interval = config.connection.ping_interval;
+    ws_config.pong_timeout = config.connection.pong_timeout;
+
+    g_context->ws_client = WebSocketClient::Create(ws_config);
+
+    // Set up WebSocket callbacks
+    g_context->ws_client->SetConnectionCallback(
+        [](ConnectionState state) {
+            switch (state) {
+                case ConnectionState::kConnected:
+                    LOG_INFO("WebSocket connected");
+                    break;
+                case ConnectionState::kAuthenticated:
+                    LOG_INFO("WebSocket authenticated");
+                    g_context->ws_connected = true;
+                    break;
+                case ConnectionState::kDisconnected:
+                    LOG_WARN("WebSocket disconnected");
+                    g_context->ws_connected = false;
+                    break;
+                case ConnectionState::kConnecting:
+                    LOG_INFO("WebSocket connecting...");
+                    break;
+                case ConnectionState::kAuthenticating:
+                    LOG_INFO("WebSocket authenticating...");
+                    break;
+            }
+        });
+
+    g_context->ws_client->SetErrorCallback(
+        [](const std::string& error) {
+            LOG_ERROR("WebSocket error: {}", error);
+        });
+
+    g_context->ws_client->SetMessageCallback(
+        [](const std::string& message) {
+            LOG_DEBUG("WebSocket message received: {}", message.substr(0, 100));
+            // TODO: Handle incoming messages (commands from server)
+        });
+
+    g_context->ws_client->SetAuthCallback(
+        [](bool success, const std::string& session_id) {
+            if (success) {
+                LOG_INFO("Authentication successful, session: {}", session_id);
+            } else {
+                LOG_ERROR("Authentication failed");
+            }
+        });
+
+    // Connect to server
+    LOG_INFO("Connecting to server: {}", config.agent.server_url);
+    g_context->ws_client->Connect(config.agent.server_url);
+
     // Start workers
     g_context->process_manager->StartAll();
 
@@ -78,6 +143,9 @@ void ServiceRun(const Config& config) {
 
     // Shutdown
     LOG_INFO("Agent shutting down...");
+    if (g_context->ws_client) {
+        g_context->ws_client->Disconnect();
+    }
     g_context->process_manager->StopAll();
     ServiceReportStatus(SERVICE_STOPPED, NO_ERROR, 0);
 }
