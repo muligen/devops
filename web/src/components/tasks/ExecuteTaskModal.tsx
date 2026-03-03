@@ -2,7 +2,7 @@ import { useState, useEffect } from 'react'
 import { Modal, Form, Select, Input, InputNumber, Space, Tag, message, Spin, Alert } from 'antd'
 import { PlayCircleOutlined } from '@ant-design/icons'
 import { agentApi, taskApi } from '@/api'
-import type { Agent, CreateTaskRequest } from '@/types'
+import type { Agent } from '@/types'
 
 interface ExecuteTaskModalProps {
   open: boolean
@@ -60,17 +60,19 @@ export default function ExecuteTaskModal({ open, onClose, onSuccess, initialAgen
     setLoading(true)
     try {
       // Create tasks for all selected agents
-      const promises = selectedAgents.map((agentId) =>
-        taskApi.create({
-          agent_ids: [agentId],
-          command_type: values.command_type,
-          command: values.command,
+      for (const agentId of selectedAgents) {
+        await taskApi.create({
+          agent_id: agentId,
+          type: 'exec_shell',
+          params: {
+            command: values.command,
+            command_type: values.command_type,
+          },
           timeout: values.timeout || 300,
           priority: values.priority || 0,
         })
-      )
+      }
 
-      await Promise.all(promises)
       message.success(`已创建 ${selectedAgents.length} 个任务`)
       form.resetFields()
       setSelectedAgents([])

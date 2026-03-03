@@ -153,11 +153,11 @@ export default function AgentDetailPage() {
             <Descriptions column={1} size="small">
               <Descriptions.Item label="主机名">{agent.hostname}</Descriptions.Item>
               <Descriptions.Item label="IP 地址">{agent.ip_address}</Descriptions.Item>
-              <Descriptions.Item label="操作系统">{agent.os_type} {agent.os_version}</Descriptions.Item>
-              <Descriptions.Item label="Agent 版本">{agent.agent_version}</Descriptions.Item>
+              <Descriptions.Item label="操作系统">{agent.os_info}</Descriptions.Item>
+              <Descriptions.Item label="Agent 版本">{agent.version}</Descriptions.Item>
               <Descriptions.Item label="首次上线">{formatDate(agent.created_at)}</Descriptions.Item>
               <Descriptions.Item label="最后心跳">
-                {formatRelativeTime(agent.last_heartbeat_at)}
+                {formatRelativeTime(agent.last_seen_at)}
               </Descriptions.Item>
             </Descriptions>
           </Card>

@@ -96,16 +96,19 @@ export interface Agent {
 export interface Task {
   id: string
   agent_id: string
-  command_type: 'shell' | 'builtin'
-  command: string
+  type: string
+  params: Record<string, unknown>
   status: 'pending' | 'running' | 'completed' | 'failed' | 'cancelled'
-  output: string
-  exit_code: number | null
-  created_at: string
-  started_at: string | null
-  completed_at: string | null
-  timeout: number
   priority: number
+  timeout: number
+  result?: Record<string, unknown>
+  output?: string
+  exit_code?: number | null
+  duration?: number | null
+  created_by: string
+  created_at: string
+  started_at?: string | null
+  completed_at?: string | null
 }
 
 export interface AlertRule {
