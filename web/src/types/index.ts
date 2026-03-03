@@ -82,13 +82,12 @@ export interface Agent {
   name: string
   hostname: string
   ip_address: string
-  os_type: string
-  os_version: string
-  agent_version: string
+  os_info: string
+  version: string
   status: 'online' | 'offline' | 'unknown'
-  last_heartbeat_at: string | null
+  last_seen_at: string | null
   created_at: string
-  updated_at: string
+  metadata?: Record<string, unknown>
   cpu_usage?: number
   memory_usage?: number
   disk_usage?: number
@@ -148,10 +147,10 @@ export interface DashboardStats {
   total_tasks: number
   pending_tasks: number
   running_tasks: number
-  completed_tasks_24h: number
-  failed_tasks_24h: number
+  completed_tasks: number
+  failed_tasks: number
+  alerts_triggered: number
   pending_alerts: number
-  recent_alerts_24h: number
   task_trend?: TaskTrendItem[]
 }
 

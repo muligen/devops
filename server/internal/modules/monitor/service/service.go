@@ -504,6 +504,16 @@ func (s *Service) GetLatestMetric(ctx context.Context, agentID string) (*domain.
 	return s.repo.GetLatestMetric(ctx, agentID)
 }
 
+// GetLatestMetricValues gets the latest CPU, memory, and disk values for an agent.
+// Returns cpuUsage, memoryPercent, diskPercent, error
+func (s *Service) GetLatestMetricValues(ctx context.Context, agentID string) (float64, float64, float64, error) {
+	metric, err := s.repo.GetLatestMetric(ctx, agentID)
+	if err != nil {
+		return 0, 0, 0, err
+	}
+	return metric.CPUUsage, metric.MemoryPercent, metric.DiskPercent, nil
+}
+
 // GetAgentMetrics gets metrics for an agent within a time range.
 func (s *Service) GetAgentMetrics(ctx context.Context, agentID string, start, end time.Time, limit int) ([]domain.AgentMetric, error) {
 	return s.repo.GetMetricsByAgent(ctx, agentID, start, end, limit)

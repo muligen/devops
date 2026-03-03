@@ -33,8 +33,8 @@ export default function StatCards({ stats }: StatCardsProps) {
     },
     {
       title: '今日任务',
-      value: stats?.completed_tasks_24h || 0,
-      suffix: `完成 / ${stats?.failed_tasks_24h || 0} 失败`,
+      value: stats?.completed_tasks || 0,
+      suffix: `完成 / ${stats?.failed_tasks || 0} 失败`,
       icon: <CheckCircleOutlined style={{ fontSize: 24 }} />,
       color: '#1890ff',
       bgColor: '#e6f7ff',

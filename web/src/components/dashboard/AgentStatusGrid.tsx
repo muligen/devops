@@ -85,7 +85,7 @@ export default function AgentStatusGrid({ agents, loading }: AgentStatusGridProp
               )}
               {agent.status === 'offline' && (
                 <Text type="secondary" className={styles.lastSeen}>
-                  离线: {formatRelativeTime(agent.last_heartbeat_at)}
+                  离线: {formatRelativeTime(agent.last_seen_at)}
                 </Text>
               )}
             </div>

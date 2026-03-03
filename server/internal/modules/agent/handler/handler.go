@@ -2,6 +2,7 @@
 package handler
 
 import (
+	"context"
 	"strconv"
 
 	"github.com/agentteams/server/internal/modules/agent/domain"
@@ -10,14 +11,25 @@ import (
 	"github.com/gin-gonic/gin"
 )
 
+// LatestMetricsService interface for fetching agent metrics
+type LatestMetricsService interface {
+	GetLatestMetricValues(ctx context.Context, agentID string) (cpuUsage, memoryPercent, diskPercent float64, err error)
+}
+
 // Handler handles agent HTTP requests.
 type Handler struct {
-	service *service.Service
+	service              *service.Service
+	latestMetricsService LatestMetricsService
 }
 
 // NewHandler creates a new agent handler.
 func NewHandler(service *service.Service) *Handler {
 	return &Handler{service: service}
+}
+
+// SetLatestMetricsService sets the metrics service for fetching latest metrics.
+func (h *Handler) SetLatestMetricsService(svc LatestMetricsService) {
+	h.latestMetricsService = svc
 }
 
 // CreateAgentRequest represents create agent request.
@@ -28,16 +40,19 @@ type CreateAgentRequest struct {
 
 // AgentResponse represents agent response.
 type AgentResponse struct {
-	ID         string          `json:"id"`
-	Name       string          `json:"name"`
-	Status     string          `json:"status"`
-	Version    string          `json:"version"`
-	Hostname   string          `json:"hostname"`
-	IPAddress  string          `json:"ip_address"`
-	OSInfo     string          `json:"os_info"`
-	Metadata   domain.JSONB    `json:"metadata"`
-	LastSeenAt *string         `json:"last_seen_at"`
-	CreatedAt  string          `json:"created_at"`
+	ID           string          `json:"id"`
+	Name         string          `json:"name"`
+	Status       string          `json:"status"`
+	Version      string          `json:"version"`
+	Hostname     string          `json:"hostname"`
+	IPAddress    string          `json:"ip_address"`
+	OSInfo       string          `json:"os_info"`
+	Metadata     domain.JSONB    `json:"metadata"`
+	LastSeenAt   *string         `json:"last_seen_at"`
+	CreatedAt    string          `json:"created_at"`
+	CPUUsage     *float64        `json:"cpu_usage,omitempty"`
+	MemoryUsage  *float64        `json:"memory_usage,omitempty"`
+	DiskUsage    *float64        `json:"disk_usage,omitempty"`
 }
 
 // CreateAgent handles agent creation.
@@ -126,10 +141,19 @@ func (h *Handler) ListAgents(c *gin.Context) {
 		return
 	}
 
-	// Map to response
+	// Map to response with metrics
 	items := make([]AgentResponse, len(agents))
 	for i, agent := range agents {
 		items[i] = toAgentResponse(&agent)
+		// Fetch latest metrics if metrics service is available
+		if h.latestMetricsService != nil && agent.Status == domain.StatusOnline {
+			cpu, mem, disk, _ := h.latestMetricsService.GetLatestMetricValues(c.Request.Context(), agent.ID)
+			if cpu > 0 || mem > 0 || disk > 0 {
+				items[i].CPUUsage = &cpu
+				items[i].MemoryUsage = &mem
+				items[i].DiskUsage = &disk
+			}
+		}
 	}
 
 	response.Paged(c, items, page, pageSize, total)

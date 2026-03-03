@@ -272,6 +272,9 @@ func (app *Application) setupRouter() *gin.Engine {
 	// Wire WebSocket handler to monitor service for metrics handling
 	wsHandler.SetMetricsService(monitorSvc)
 
+	// Wire monitor service to agent handler for metrics display
+	agentH.SetLatestMetricsService(monitorSvc)
+
 	monitorH := monitorHandler.NewHandler(monitorSvc)
 
 	taskH := taskHandler.NewHandler(taskSvc)
