@@ -173,7 +173,18 @@ func (h *Handler) GetAgent(c *gin.Context) {
 		return
 	}
 
-	response.Success(c, toAgentResponse(agent))
+	resp := toAgentResponse(agent)
+	// Fetch latest metrics if metrics service is available
+	if h.latestMetricsService != nil && agent.Status == domain.StatusOnline {
+		cpu, mem, disk, _ := h.latestMetricsService.GetLatestMetricValues(c.Request.Context(), agent.ID)
+		if cpu > 0 || mem > 0 || disk > 0 {
+			resp.CPUUsage = &cpu
+			resp.MemoryUsage = &mem
+			resp.DiskUsage = &disk
+		}
+	}
+
+	response.Success(c, resp)
 }
 
 // DeleteAgent handles agent deletion.
