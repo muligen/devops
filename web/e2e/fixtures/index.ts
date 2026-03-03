@@ -1,13 +1,20 @@
-import { test as base, Page } from '@playwright/test'
+import { test as base, Page, APIRequestContext } from '@playwright/test'
 
 export interface TestFixtures {
   authenticatedPage: Page
+  apiClient: APIRequestContext
 }
 
+const API_BASE_URL = process.env.API_BASE_URL || 'http://localhost:8080/api/v1'
+
 export const test = base.extend<TestFixtures>({
-  authenticatedPage: async ({ page }, use) => {
-    // Login via API and store auth state
-    const response = await page.request.post('http://localhost:8080/api/v1/auth/login', {
+  apiClient: async ({ request }, use) => {
+    await use(request)
+  },
+
+  authenticatedPage: async ({ page, request }, use) => {
+    // Login via API and get token
+    const response = await request.post(`${API_BASE_URL}/auth/login`, {
       data: {
         username: 'admin',
         password: 'admin123',
@@ -19,6 +26,7 @@ export const test = base.extend<TestFixtures>({
     }
 
     const data = await response.json()
+    const accessToken = data.data.access_token
 
     // Set auth state in localStorage
     await page.goto('/')
@@ -37,10 +45,18 @@ export const test = base.extend<TestFixtures>({
         version: 0,
       }
       localStorage.setItem('auth-storage', JSON.stringify(authState))
-    }, data.access_token)
+    }, accessToken)
 
     await use(page)
   },
 })
+
+// Helper function to get authorization header
+export function getAuthHeaders(token: string): Record<string, string> {
+  return {
+    Authorization: `Bearer ${token}`,
+    'Content-Type': 'application/json',
+  }
+}
 
 export { expect } from '@playwright/test'
