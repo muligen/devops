@@ -11,11 +11,19 @@ import ExecuteTaskModal from '@/components/tasks/ExecuteTaskModal'
 
 const { Title } = Typography
 
+interface MetricData {
+  collected_at: string
+  cpu_usage: number
+  memory_percent: number
+  disk_percent: number
+}
+
 export default function AgentDetailPage() {
   const { id } = useParams<{ id: string }>()
   const navigate = useNavigate()
   const [loading, setLoading] = useState(true)
   const [agent, setAgent] = useState<Agent | null>(null)
+  const [metrics, setMetrics] = useState<MetricData[]>([])
   const [timeRange, setTimeRange] = useState('1h')
   const [executeModalOpen, setExecuteModalOpen] = useState(false)
 
@@ -25,8 +33,6 @@ export default function AgentDetailPage() {
     try {
       const data = await agentApi.get(id)
       setAgent(data)
-      // Fetch metrics history (currently unused, but available for future use)
-      await agentApi.getMetrics(id, timeRange)
     } catch (error) {
       console.error('Failed to fetch agent:', error)
     } finally {
@@ -34,8 +40,23 @@ export default function AgentDetailPage() {
     }
   }
 
+  const fetchMetrics = async () => {
+    if (!id) return
+    try {
+      const data = await agentApi.getMetrics(id, timeRange)
+      setMetrics(data as MetricData[])
+    } catch (error) {
+      console.error('Failed to fetch metrics:', error)
+    }
+  }
+
   useEffect(() => {
     fetchAgent()
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [id])
+
+  useEffect(() => {
+    fetchMetrics()
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [id, timeRange])
 
@@ -112,6 +133,28 @@ export default function AgentDetailPage() {
         detail: { valueAnimation: true, fontSize: 24, offsetCenter: [0, '0%'] },
         data: [{ value: agent.memory_usage || 0, name: '内存' }],
       },
+    ],
+  }
+
+  // Prepare chart data from metrics
+  const chartData = metrics.slice().reverse()
+  const xAxisData = chartData.map((m) => {
+    const date = new Date(m.collected_at)
+    return date.toLocaleTimeString('zh-CN', { hour: '2-digit', minute: '2-digit' })
+  })
+  const cpuData = chartData.map((m) => m.cpu_usage)
+  const memoryData = chartData.map((m) => m.memory_percent)
+  const diskData = chartData.map((m) => m.disk_percent)
+
+  const historyChartOption = {
+    tooltip: { trigger: 'axis' },
+    legend: { data: ['CPU', '内存', '磁盘'], bottom: 0 },
+    xAxis: { type: 'category', data: xAxisData },
+    yAxis: { type: 'value', max: 100 },
+    series: [
+      { name: 'CPU', type: 'line', smooth: true, data: cpuData },
+      { name: '内存', type: 'line', smooth: true, data: memoryData },
+      { name: '磁盘', type: 'line', smooth: true, data: diskData },
     ],
   }
 
@@ -216,17 +259,7 @@ export default function AgentDetailPage() {
               </Button>
             </Space>
             <ReactECharts
-              option={{
-                tooltip: { trigger: 'axis' },
-                legend: { data: ['CPU', '内存', '磁盘'], bottom: 0 },
-                xAxis: { type: 'category', data: [] },
-                yAxis: { type: 'value', max: 100 },
-                series: [
-                  { name: 'CPU', type: 'line', smooth: true, data: [] },
-                  { name: '内存', type: 'line', smooth: true, data: [] },
-                  { name: '磁盘', type: 'line', smooth: true, data: [] },
-                ],
-              }}
+              option={historyChartOption}
               style={{ height: 300 }}
             />
           </Card>
