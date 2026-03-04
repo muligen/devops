@@ -134,6 +134,11 @@ issues:
       linters:
         - gochecknoinits
 
+    # 脚本目录跳过检查 (测试工具)
+    - path: scripts/
+      linters:
+        - errcheck
+
   max-issues-per-linter: 0
   max-same-issues: 0
   new: false

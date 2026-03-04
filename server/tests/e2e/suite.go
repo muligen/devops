@@ -11,6 +11,7 @@ import (
 	agentdomain "github.com/agentteams/server/internal/modules/agent/domain"
 	"github.com/agentteams/server/internal/modules/agent/handler"
 	agentservice "github.com/agentteams/server/internal/modules/agent/service"
+	authdomain "github.com/agentteams/server/internal/modules/auth/domain"
 	authhandler "github.com/agentteams/server/internal/modules/auth/handler"
 	authservice "github.com/agentteams/server/internal/modules/auth/service"
 	monitordomain "github.com/agentteams/server/internal/modules/monitor/domain"
@@ -262,6 +263,7 @@ func (s *TestSuite) ViewerToken() string {
 // runMigrations runs auto migrations
 func runMigrations(db *gorm.DB) error {
 	return db.AutoMigrate(
+		&authdomain.User{},
 		&agentdomain.Agent{},
 		&monitordomain.AgentMetric{},
 	)
