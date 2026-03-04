@@ -96,6 +96,11 @@ linters-settings:
       - hugeParam
       - rangeValCopy
       - unnecessaryBlock
+      - paramTypeCombine
+      - unnamedResult
+      - preferFprint
+      - equalFold
+      - httpNoBody
 
   gosec:
     excludes:
