@@ -123,6 +123,12 @@ issues:
         - gosec
         - goconst
         - gocyclo
+        - errcheck
+
+    # E2E 测试目录放宽规则
+    - path: tests/e2e/
+      linters:
+        - errcheck
 
     # 生成的文件跳过检查
     - path: generated\.go
