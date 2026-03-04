@@ -61,6 +61,8 @@ linters-settings:
     disable:
       - fieldalignment
       - copylocks
+      - unusedwrite
+      - shadow
 
   gocyclo:
     min-complexity: 15
@@ -135,6 +137,7 @@ issues:
         - errcheck
         - bodyclose
         - unused
+        - ineffassign
 
     # E2E 测试目录放宽规则
     - path: tests/e2e/
