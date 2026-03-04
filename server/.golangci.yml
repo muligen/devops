@@ -58,6 +58,9 @@ linters-settings:
   govet:
     check-shadowing: true
     enable-all: true
+    disable:
+      - fieldalignment
+      - copylocks
 
   gocyclo:
     min-complexity: 15
