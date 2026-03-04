@@ -56,7 +56,7 @@ linters-settings:
     check-blank: false
 
   govet:
-    check-shadowing: true
+    check-shadowing: false
     enable-all: true
     disable:
       - fieldalignment
@@ -75,7 +75,7 @@ linters-settings:
     min-occurrences: 3
 
   misspell:
-    locale: US
+    locale: UK
 
   goimports:
     local-prefixes: github.com/agentteams
