@@ -139,6 +139,11 @@ issues:
         - staticcheck
         - misspell
 
+    # Handler 文件允许重复代码
+    - path: internal/modules/.*/handler/
+      linters:
+        - dupl
+
     # E2E 测试目录放宽规则
     - path: tests/e2e/
       linters:
