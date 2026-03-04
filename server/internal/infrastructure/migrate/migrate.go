@@ -69,7 +69,7 @@ func (m *Migrator) Steps(n int) error {
 }
 
 // Version returns the current migration version.
-func (m *Migrator) Version() (uint, bool, error) {
+func (m *Migrator) Version() (version uint, dirty bool, err error) {
 	return m.migrate.Version()
 }
 

@@ -136,8 +136,11 @@ func (c *WSClient) Connect(ctx context.Context) error {
 		HandshakeTimeout: 10 * time.Second,
 	}
 
-	conn, _, err := dialer.Dial(c.url+"/ws", nil)
+	conn, resp, err := dialer.Dial(c.url+"/ws", nil)
 	if err != nil {
+		if resp != nil {
+			resp.Body.Close()
+		}
 		return fmt.Errorf("failed to connect: %w", err)
 	}
 

@@ -125,12 +125,12 @@ func (c *Client) SetNX(ctx context.Context, key string, value interface{}, expir
 }
 
 // HSet sets a hash field.
-func (c *Client) HSet(ctx context.Context, key string, field string, value interface{}) error {
+func (c *Client) HSet(ctx context.Context, key, field string, value interface{}) error {
 	return c.client.HSet(ctx, key, field, value).Err()
 }
 
 // HGet gets a hash field.
-func (c *Client) HGet(ctx context.Context, key string, field string) (string, error) {
+func (c *Client) HGet(ctx context.Context, key, field string) (string, error) {
 	return c.client.HGet(ctx, key, field).Result()
 }
 

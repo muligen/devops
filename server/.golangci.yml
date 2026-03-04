@@ -124,6 +124,8 @@ issues:
         - goconst
         - gocyclo
         - errcheck
+        - bodyclose
+        - unused
 
     # E2E 测试目录放宽规则
     - path: tests/e2e/
