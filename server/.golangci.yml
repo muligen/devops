@@ -75,7 +75,7 @@ linters-settings:
     min-occurrences: 3
 
   misspell:
-    locale: UK
+    locale: US
 
   goimports:
     local-prefixes: github.com/agentteams
