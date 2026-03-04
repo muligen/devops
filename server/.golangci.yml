@@ -35,7 +35,6 @@ linters:
     - goconst
     - gocritic
     - gocyclo
-    - godot
     - gofmt
     - goimports
     - goprintffuncname
