@@ -119,10 +119,6 @@ linters-settings:
     range-loops: true
     for-loops: false
 
-  whitespace:
-    multi-func: true
-    multi-if: true
-
 issues:
   exclude-rules:
     # 测试文件放宽规则
