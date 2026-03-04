@@ -5,7 +5,6 @@ import (
 	"context"
 	"net/http"
 	"testing"
-	"time"
 
 	"github.com/agentteams/server/tests/e2e"
 	"github.com/stretchr/testify/assert"

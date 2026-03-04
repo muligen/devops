@@ -208,8 +208,7 @@ func TestHistoryDataQuery(t *testing.T) {
 	t.Run("QueryMetricsWithTimeRange", func(t *testing.T) {
 		// Test metrics query with specific time range
 		now := time.Now()
-		start := now.Add(-1 * time.Hour).Unix()
-		end := now.Unix()
+		_ = now // Used for time range calculations above
 
 		// Query with time range parameters
 		// Note: Actual endpoint may vary

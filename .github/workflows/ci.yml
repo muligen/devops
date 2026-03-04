@@ -62,15 +62,15 @@ jobs:
 
       - name: Configure CMake
         working-directory: agent
-        run: cmake --preset conan-release
+        run: cmake --preset conan-default
 
       - name: Build
         working-directory: agent
-        run: cmake --build --preset conan-release
+        run: cmake --build --preset conan-default
 
       - name: Run tests
         working-directory: agent
-        run: ctest --preset conan-release -C Release --output-on-failure
+        run: ctest --preset conan-default -C Release --output-on-failure
 
   # Lint Check
   lint:
