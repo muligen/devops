@@ -47,8 +47,6 @@ linters:
     - sqlclosecheck
     - stylecheck
     - unconvert
-    - unparam
-    - whitespace
 
 linters-settings:
   errcheck:
