@@ -200,7 +200,7 @@ func InternalError(c *gin.Context, message string) {
 }
 
 // Error returns an error response with custom code and message.
-func Error(c *gin.Context, httpStatus int, code int, message string) {
+func Error(c *gin.Context, httpStatus, code int, message string) {
 	c.JSON(httpStatus, Response{
 		Code:    code,
 		Message: message,

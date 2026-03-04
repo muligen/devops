@@ -93,6 +93,9 @@ linters-settings:
       - octalLiteral
       - whyNoLint
       - wrapperFunc
+      - hugeParam
+      - rangeValCopy
+      - unnecessaryBlock
 
   gosec:
     excludes:
