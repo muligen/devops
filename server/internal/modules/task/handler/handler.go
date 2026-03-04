@@ -232,7 +232,7 @@ func (h *Handler) CancelTask(c *gin.Context) {
 	}
 
 	response.Success(c, gin.H{
-		"message": "task cancelled",
+		"message": "task canceled",
 		"id":      id,
 	})
 }

@@ -21,7 +21,7 @@ func TestTaskStatus(t *testing.T) {
 		{"success", domain.StatusSuccess, false, false, true},
 		{"failed", domain.StatusFailed, false, false, true},
 		{"timeout", domain.StatusTimeout, false, false, true},
-		{"cancelled", domain.StatusCancelled, false, false, true},
+		{"canceled", domain.StatusCancelled, false, false, true},
 	}
 
 	for _, tt := range tests {

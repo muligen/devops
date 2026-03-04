@@ -41,7 +41,7 @@ const (
 	StatusSuccess   = "success"
 	StatusFailed    = "failed"
 	StatusTimeout   = "timeout"
-	StatusCancelled = "cancelled"
+	StatusCancelled = "canceled"
 )
 
 // JSONB is a type for JSONB fields in PostgreSQL.

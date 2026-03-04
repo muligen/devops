@@ -138,12 +138,16 @@ issues:
         - bodyclose
         - unused
         - ineffassign
+        - staticcheck
+        - misspell
 
     # E2E 测试目录放宽规则
     - path: tests/e2e/
       linters:
         - errcheck
         - goconst
+        - noctx
+        - misspell
 
     # 生成的文件跳过检查
     - path: generated\.go

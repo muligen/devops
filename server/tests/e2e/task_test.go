@@ -249,13 +249,13 @@ func TestTaskCancellation(t *testing.T) {
 		require.NoError(t, err)
 		assert.Equal(t, http.StatusOK, resp.StatusCode)
 
-		// Verify task is cancelled
+		// Verify task is canceled
 		getResp, err := client.Get("/api/v1/tasks/" + taskID)
 		require.NoError(t, err)
 		var result map[string]interface{}
 		err = getResp.JSON(&result)
 		require.NoError(t, err)
-		assert.Equal(t, "cancelled", result["status"])
+		assert.Equal(t, "canceled", result["status"])
 	})
 
 	t.Run("CancelTask_NotFound", func(t *testing.T) {
