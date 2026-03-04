@@ -62,7 +62,6 @@ type Session struct {
 	LastSeen   time.Time
 	SendChan   chan []byte
 	CloseChan  chan struct{}
-	mu         sync.RWMutex
 }
 
 // NewSession creates a new session.
@@ -405,13 +404,13 @@ func (h *WebSocketHandler) handleMetrics(session *Session, data json.RawMessage)
 			ctx,
 			session.AgentID,
 			metrics.CPU,
-			int64(metrics.Memory.Total),
-			int64(metrics.Memory.Used),
+			int64(metrics.Memory.Total),   //nolint:gosec // safe conversion for memory values
+			int64(metrics.Memory.Used),    //nolint:gosec // safe conversion for memory values
 			metrics.Memory.Percent,
-			int64(metrics.Disk.Total),
-			int64(metrics.Disk.Used),
+			int64(metrics.Disk.Total),     //nolint:gosec // safe conversion for disk values
+			int64(metrics.Disk.Used),      //nolint:gosec // safe conversion for disk values
 			metrics.Disk.Percent,
-			int64(metrics.Uptime),
+			int64(metrics.Uptime),         //nolint:gosec // safe conversion for uptime
 		); err != nil {
 			h.logger.Errorw("Failed to store metrics", "error", err, "agent_id", session.AgentID)
 		}

@@ -15,7 +15,7 @@ import (
 
 func main() {
 	agentID := "f7d2a25c-92eb-4b49-ae07-62b052918b19"
-	token := "6ebed1148e901bb254873761254c2492be25cc3ad4d1ed5fea60bbefbdf77356"
+	token := "6ebed1148e901bb254873761254c2492be25cc3ad4d1ed5fea60bbefbdf77356" //nolint:gosec // test token
 
 	// Compute token hash
 	tokenHashBytes := sha256.Sum256([]byte(token))

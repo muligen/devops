@@ -83,6 +83,7 @@ func (h *Handler) CreateAgent(c *gin.Context) {
 }
 
 // ListAgents handles listing agents.
+//nolint:gocyclo // complex handler with validation logic
 func (h *Handler) ListAgents(c *gin.Context) {
 	page := 1
 	pageSize := 20

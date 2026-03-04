@@ -34,7 +34,6 @@ type DashboardClient struct {
 	Conn     *websocket.Conn
 	Send     chan []byte
 	Close    chan struct{}
-	mu       sync.RWMutex
 }
 
 // NewDashboardClient creates a new dashboard client.
