@@ -377,7 +377,12 @@ func (h *Handler) AcknowledgeAlertEvent(c *gin.Context) {
 		return
 	}
 
-	event, err := h.service.AcknowledgeEvent(c.Request.Context(), id, userID.(string))
+	userIDStr, ok := userID.(string)
+	if !ok {
+		response.Unauthorized(c, "invalid user id")
+		return
+	}
+	event, err := h.service.AcknowledgeEvent(c.Request.Context(), id, userIDStr)
 	if err != nil {
 		if err == service.ErrAlertEventNotFound {
 			response.NotFound(c, "alert event not found")
@@ -406,8 +411,13 @@ func (h *Handler) BatchAcknowledgeAlertEvents(c *gin.Context) {
 		response.Unauthorized(c, "unauthorized")
 		return
 	}
+	userIDStr, ok := userID.(string)
+	if !ok {
+		response.Unauthorized(c, "invalid user id")
+		return
+	}
 
-	count, err := h.service.BatchAcknowledge(c.Request.Context(), req.IDs, userID.(string))
+	count, err := h.service.BatchAcknowledge(c.Request.Context(), req.IDs, userIDStr)
 	if err != nil {
 		response.InternalError(c, "failed to acknowledge alert events")
 		return

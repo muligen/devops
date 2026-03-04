@@ -61,7 +61,12 @@ func RequireRoles(allowedRoles ...string) gin.HandlerFunc {
 			return
 		}
 
-		userRole := role.(string)
+		userRole, ok := role.(string)
+		if !ok {
+			response.Forbidden(c, "invalid role type")
+			c.Abort()
+			return
+		}
 		allowed := false
 		for _, r := range allowedRoles {
 			if r == userRole {
@@ -83,7 +88,9 @@ func RequireRoles(allowedRoles ...string) gin.HandlerFunc {
 // GetUserID extracts user ID from context.
 func GetUserID(c *gin.Context) string {
 	if userID, exists := c.Get("user_id"); exists {
-		return userID.(string)
+		if s, ok := userID.(string); ok {
+			return s
+		}
 	}
 	return ""
 }

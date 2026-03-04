@@ -160,7 +160,10 @@ func (h *DashboardWSHandler) runHub(ctx context.Context) {
 
 		case message := <-h.broadcast:
 			h.clients.Range(func(key, value interface{}) bool {
-				client := value.(*DashboardClient)
+				client, ok := value.(*DashboardClient)
+				if !ok {
+					return true
+				}
 				select {
 				case client.Send <- message:
 				default:
@@ -401,7 +404,7 @@ func (h *DashboardWSHandler) writePump(client *DashboardClient) {
 			return
 		case message, ok := <-client.Send:
 			if !ok {
-				client.Conn.WriteMessage(websocket.CloseMessage, []byte{})
+				_ = client.Conn.WriteMessage(websocket.CloseMessage, []byte{})
 				return
 			}
 			if err := client.Conn.WriteMessage(websocket.TextMessage, message); err != nil {

@@ -355,8 +355,8 @@ func (h *Handler) StreamTaskOutput(c *gin.Context) {
 
 // sendSSE sends a Server-Sent Event.
 func sendSSE(c *gin.Context, flusher http.Flusher, event string, data interface{}) {
-	c.Writer.WriteString(fmt.Sprintf("event: %s\n", event))
-	c.Writer.WriteString(fmt.Sprintf("data: %s\n\n", mustMarshal(data)))
+	_, _ = c.Writer.WriteString(fmt.Sprintf("event: %s\n", event))
+	_, _ = c.Writer.WriteString(fmt.Sprintf("data: %s\n\n", mustMarshal(data)))
 	flusher.Flush()
 }
 

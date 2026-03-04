@@ -502,7 +502,10 @@ func (h *WebSocketHandler) SendCommand(agentID string, command map[string]interf
 		return fmt.Errorf("agent not connected")
 	}
 
-	session := value.(*Session)
+	session, ok := value.(*Session)
+	if !ok {
+		return fmt.Errorf("invalid session type")
+	}
 	if session.State != AuthStateAuthenticated {
 		return fmt.Errorf("agent not authenticated")
 	}
@@ -602,7 +605,9 @@ func (h *WebSocketHandler) IsAgentConnected(agentID string) bool {
 func (h *WebSocketHandler) GetConnectedAgents() []string {
 	var agents []string
 	h.sessions.Range(func(key, value interface{}) bool {
-		agents = append(agents, key.(string))
+		if agentID, ok := key.(string); ok {
+			agents = append(agents, agentID)
+		}
 		return true
 	})
 	return agents
