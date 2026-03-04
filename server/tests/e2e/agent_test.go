@@ -113,10 +113,11 @@ func TestAgentQuery(t *testing.T) {
 		err = resp.JSON(&result)
 		require.NoError(t, err)
 
-		items := result["items"].([]interface{})
+		items := result["data"].([]interface{})
 		assert.GreaterOrEqual(t, len(items), 2) // At least our 2 fixtures
 
-		total := result["total"].(float64)
+		pagination := result["pagination"].(map[string]interface{})
+		total := pagination["total"].(float64)
 		assert.GreaterOrEqual(t, int(total), 2)
 	})
 
@@ -137,7 +138,7 @@ func TestAgentQuery(t *testing.T) {
 		err = resp.JSON(&result)
 		require.NoError(t, err)
 
-		items := result["items"].([]interface{})
+		items := result["data"].([]interface{})
 		assert.LessOrEqual(t, len(items), 10)
 	})
 
@@ -150,7 +151,7 @@ func TestAgentQuery(t *testing.T) {
 		err = resp.JSON(&result)
 		require.NoError(t, err)
 
-		items := result["items"].([]interface{})
+		items := result["data"].([]interface{})
 		for _, item := range items {
 			agent := item.(map[string]interface{})
 			assert.Equal(t, "online", agent["status"])

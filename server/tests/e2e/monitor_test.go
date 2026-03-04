@@ -55,7 +55,7 @@ func TestDashboardDataAPI(t *testing.T) {
 			require.NoError(t, err)
 
 			// Should return alerts array
-			if items, ok := result["items"].([]interface{}); ok {
+			if items, ok := result["data"].([]interface{}); ok {
 				// Alerts should have required fields
 				for _, item := range items {
 					alert := item.(map[string]interface{})
@@ -77,7 +77,7 @@ func TestDashboardDataAPI(t *testing.T) {
 		require.NoError(t, err)
 
 		// Calculate status summary from agent list
-		items := result["items"].([]interface{})
+		items := result["data"].([]interface{})
 		onlineCount := 0
 		offlineCount := 0
 
@@ -192,7 +192,7 @@ func TestHistoryDataQuery(t *testing.T) {
 			require.NoError(t, err)
 
 			// Should return array of metrics
-			if items, ok := result["items"].([]interface{}); ok {
+			if items, ok := result["data"].([]interface{}); ok {
 				assert.GreaterOrEqual(t, len(items), 1)
 
 				// Each metric should have required fields
@@ -228,7 +228,7 @@ func TestHistoryDataQuery(t *testing.T) {
 			require.NoError(t, err)
 
 			// Should return paginated logs
-			if items, ok := result["items"].([]interface{}); ok {
+			if items, ok := result["data"].([]interface{}); ok {
 				// Logs should have required fields
 				for _, item := range items {
 					log := item.(map[string]interface{})

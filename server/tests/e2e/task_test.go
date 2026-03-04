@@ -149,7 +149,7 @@ func TestTaskQuery(t *testing.T) {
 		err = resp.JSON(&result)
 		require.NoError(t, err)
 
-		items := result["items"].([]interface{})
+		items := result["data"].([]interface{})
 		assert.GreaterOrEqual(t, len(items), 1)
 	})
 }
@@ -393,7 +393,7 @@ func TestTaskQueueManagement(t *testing.T) {
 		err = listResp.JSON(&listResult)
 		require.NoError(t, err)
 
-		items := listResult["items"].([]interface{})
+		items := listResult["data"].([]interface{})
 		assert.GreaterOrEqual(t, len(items), 5)
 	})
 
@@ -418,7 +418,7 @@ func TestTaskQueueManagement(t *testing.T) {
 		err = resp.JSON(&result)
 		require.NoError(t, err)
 
-		items := result["items"].([]interface{})
+		items := result["data"].([]interface{})
 		// All returned items should have pending status
 		for _, item := range items {
 			task := item.(map[string]interface{})
