@@ -1,0 +1,36 @@
+# E2E Test Configuration
+
+server:
+  host: "localhost"
+  port: 8080
+  base_url: "http://localhost:8080"
+
+database:
+  # Testcontainers will set these
+  host: ""
+  port: 5432
+  name: "agentteams_test"
+  user: "test"
+  password: "test"
+  ssl_mode: "disable"
+
+redis:
+  host: ""
+  port: 6379
+  db: 0
+
+rabbitmq:
+  host: ""
+  port: 5672
+  user: "guest"
+  password: "guest"
+  vhost: "/"
+
+jwt:
+  secret: "test-secret-key-for-e2e-testing-only"
+  expiry: "1h"
+  refresh_expiry: "24h"
+
+test:
+  timeout: "30s"
+  cleanup: true
