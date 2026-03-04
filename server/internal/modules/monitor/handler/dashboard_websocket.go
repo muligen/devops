@@ -18,12 +18,12 @@ import (
 
 // Dashboard WebSocket message types
 const (
-	DashboardMsgTypeAgentStatus  = "agent_status"
-	DashboardMsgTypeMetrics      = "metrics"
-	DashboardMsgTypeAlert        = "alert"
-	DashboardMsgTypeDashboard    = "dashboard"
-	DashboardMsgTypeConnected    = "connected"
-	DashboardMsgTypeError        = "error"
+	DashboardMsgTypeAgentStatus = "agent_status"
+	DashboardMsgTypeMetrics     = "metrics"
+	DashboardMsgTypeAlert       = "alert"
+	DashboardMsgTypeDashboard   = "dashboard"
+	DashboardMsgTypeConnected   = "connected"
+	DashboardMsgTypeError       = "error"
 )
 
 // DashboardClient represents a connected dashboard client.
@@ -50,19 +50,19 @@ func NewDashboardClient(conn *websocket.Conn, userID, username string) *Dashboar
 
 // DashboardWSHandler handles WebSocket connections from the dashboard frontend.
 type DashboardWSHandler struct {
-	jwtService      *service.JWTService
-	mq              *mq.Client
-	logger          *logger.Logger
-	upgrader        websocket.Upgrader
-	clients         sync.Map // map[string]*DashboardClient
-	broadcast       chan []byte
-	register        chan *DashboardClient
-	unregister      chan *DashboardClient
-	metricsBuffer   *MetricsBuffer
-	statsProvider   StatsProvider
-	alertProvider   AlertProvider
-	stopCh          chan struct{}
-	wg              sync.WaitGroup
+	jwtService    *service.JWTService
+	mq            *mq.Client
+	logger        *logger.Logger
+	upgrader      websocket.Upgrader
+	clients       sync.Map // map[string]*DashboardClient
+	broadcast     chan []byte
+	register      chan *DashboardClient
+	unregister    chan *DashboardClient
+	metricsBuffer *MetricsBuffer
+	statsProvider StatsProvider
+	alertProvider AlertProvider
+	stopCh        chan struct{}
+	wg            sync.WaitGroup
 }
 
 // StatsProvider provides dashboard statistics.

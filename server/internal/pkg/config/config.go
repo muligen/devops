@@ -94,9 +94,9 @@ type AgentConfig struct {
 
 // TaskConfig holds task-related configuration.
 type TaskConfig struct {
-	MaxConcurrent    int           `mapstructure:"max_concurrent"`
-	DefaultTimeout   time.Duration `mapstructure:"default_timeout"`
-	ResultRetention  time.Duration `mapstructure:"result_retention"`
+	MaxConcurrent   int           `mapstructure:"max_concurrent"`
+	DefaultTimeout  time.Duration `mapstructure:"default_timeout"`
+	ResultRetention time.Duration `mapstructure:"result_retention"`
 }
 
 // Config is the main configuration structure.

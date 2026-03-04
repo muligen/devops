@@ -13,39 +13,39 @@ const (
 	CodeSuccess = 0
 
 	// General errors (10000-10999)
-	CodeBadRequest      = 10001
-	CodeNotFound        = 10002
-	CodeForbidden       = 10003
-	CodeInternalError   = 10004
-	CodeValidation      = 10005
-	CodeConflict        = 10006
-	CodeRateLimited     = 10007
+	CodeBadRequest    = 10001
+	CodeNotFound      = 10002
+	CodeForbidden     = 10003
+	CodeInternalError = 10004
+	CodeValidation    = 10005
+	CodeConflict      = 10006
+	CodeRateLimited   = 10007
 
 	// Authentication errors (20000-20999)
-	CodeUnauthorized    = 20001
-	CodeTokenExpired    = 20002
+	CodeUnauthorized       = 20001
+	CodeTokenExpired       = 20002
 	CodeInvalidCredentials = 20003
-	CodeAccountLocked   = 20004
+	CodeAccountLocked      = 20004
 
 	// Agent errors (30000-30999)
-	CodeAgentOffline    = 30001
-	CodeAgentBusy       = 30002
-	CodeAgentNotFound   = 30003
-	CodeAgentExists     = 30004
+	CodeAgentOffline      = 30001
+	CodeAgentBusy         = 30002
+	CodeAgentNotFound     = 30003
+	CodeAgentExists       = 30004
 	CodeAgentTokenInvalid = 30005
 
 	// Task errors (40000-40999)
-	CodeTaskTimeout     = 40001
-	CodeTaskFailed      = 40002
-	CodeTaskNotFound    = 40003
-	CodeTaskCancelled   = 40004
+	CodeTaskTimeout   = 40001
+	CodeTaskFailed    = 40002
+	CodeTaskNotFound  = 40003
+	CodeTaskCancelled = 40004
 
 	// System errors (50000-50999)
-	CodeDatabaseError   = 50001
-	CodeSystemError     = 50002
-	CodeCacheError      = 50003
-	CodeQueueError      = 50004
-	CodeStorageError    = 50005
+	CodeDatabaseError = 50001
+	CodeSystemError   = 50002
+	CodeCacheError    = 50003
+	CodeQueueError    = 50004
+	CodeStorageError  = 50005
 )
 
 // Response is the standard API response structure.

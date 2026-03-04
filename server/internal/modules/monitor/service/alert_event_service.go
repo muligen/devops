@@ -131,13 +131,13 @@ func (s *AlertEventService) GetEventStats(ctx context.Context) (*AlertEventStats
 	}
 
 	return &AlertEventStats{
-		PendingCount:  pending,
+		PendingCount:   pending,
 		Recent24hCount: recent24h,
 	}, nil
 }
 
 // AlertEventStats represents alert event statistics.
 type AlertEventStats struct {
-	PendingCount  int64 `json:"pending_count"`
+	PendingCount   int64 `json:"pending_count"`
 	Recent24hCount int64 `json:"recent_24h_count"`
 }

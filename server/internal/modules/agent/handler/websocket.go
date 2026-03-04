@@ -32,15 +32,15 @@ const (
 
 // WebSocket message types
 const (
-	TypeAuth        = "auth"
-	TypeChallenge   = "challenge"
-	TypeAuthResult  = "auth_result"
-	TypeHeartbeat   = "heartbeat"
-	TypeMetrics     = "metrics"
-	TypeCommand     = "command"
-	TypeCommandAck  = "command_ack"
-	TypeResult      = "result"
-	TypeError       = "error"
+	TypeAuth       = "auth"
+	TypeChallenge  = "challenge"
+	TypeAuthResult = "auth_result"
+	TypeHeartbeat  = "heartbeat"
+	TypeMetrics    = "metrics"
+	TypeCommand    = "command"
+	TypeCommandAck = "command_ack"
+	TypeResult     = "result"
+	TypeError      = "error"
 )
 
 // AuthState represents authentication state.
@@ -54,14 +54,14 @@ const (
 
 // Session represents an agent WebSocket session.
 type Session struct {
-	AgentID    string
-	AgentName  string
-	Conn       *websocket.Conn
-	State      AuthState
-	Nonce      string
-	LastSeen   time.Time
-	SendChan   chan []byte
-	CloseChan  chan struct{}
+	AgentID   string
+	AgentName string
+	Conn      *websocket.Conn
+	State     AuthState
+	Nonce     string
+	LastSeen  time.Time
+	SendChan  chan []byte
+	CloseChan chan struct{}
 }
 
 // NewSession creates a new session.
@@ -379,8 +379,8 @@ func (h *WebSocketHandler) handleMetrics(session *Session, data json.RawMessage)
 	}
 
 	var metrics struct {
-		CPU     float64 `json:"cpu_usage"`
-		Memory  struct {
+		CPU    float64 `json:"cpu_usage"`
+		Memory struct {
 			Total   uint64  `json:"total"`
 			Used    uint64  `json:"used"`
 			Percent float64 `json:"percent"`
@@ -404,13 +404,13 @@ func (h *WebSocketHandler) handleMetrics(session *Session, data json.RawMessage)
 			ctx,
 			session.AgentID,
 			metrics.CPU,
-			int64(metrics.Memory.Total),   //nolint:gosec // safe conversion for memory values
-			int64(metrics.Memory.Used),    //nolint:gosec // safe conversion for memory values
+			int64(metrics.Memory.Total), //nolint:gosec // safe conversion for memory values
+			int64(metrics.Memory.Used),  //nolint:gosec // safe conversion for memory values
 			metrics.Memory.Percent,
-			int64(metrics.Disk.Total),     //nolint:gosec // safe conversion for disk values
-			int64(metrics.Disk.Used),      //nolint:gosec // safe conversion for disk values
+			int64(metrics.Disk.Total), //nolint:gosec // safe conversion for disk values
+			int64(metrics.Disk.Used),  //nolint:gosec // safe conversion for disk values
 			metrics.Disk.Percent,
-			int64(metrics.Uptime),         //nolint:gosec // safe conversion for uptime
+			int64(metrics.Uptime), //nolint:gosec // safe conversion for uptime
 		); err != nil {
 			h.logger.Errorw("Failed to store metrics", "error", err, "agent_id", session.AgentID)
 		}

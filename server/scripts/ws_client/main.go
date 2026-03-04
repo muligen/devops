@@ -52,7 +52,9 @@ func main() {
 
 			switch msg.Type {
 			case "challenge":
-				var data struct{ Nonce string `json:"nonce"` }
+				var data struct {
+					Nonce string `json:"nonce"`
+				}
 				json.Unmarshal(msg.Data, &data)
 
 				// Compute response

@@ -12,7 +12,7 @@ import (
 
 // AuditLoggerConfig holds configuration for audit logging.
 type AuditLoggerConfig struct {
-	SkipPaths []string
+	SkipPaths   []string
 	SkipActions map[string]bool
 }
 

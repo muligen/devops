@@ -24,12 +24,12 @@ const (
 
 // Notification represents a notification to be sent.
 type Notification struct {
-	Type      NotificationType `json:"type"`
-	Title     string          `json:"title"`
-	Message   string          `json:"message"`
-	Severity  string          `json:"severity"`
+	Type      NotificationType       `json:"type"`
+	Title     string                 `json:"title"`
+	Message   string                 `json:"message"`
+	Severity  string                 `json:"severity"`
 	Data      map[string]interface{} `json:"data"`
-	Timestamp time.Time       `json:"timestamp"`
+	Timestamp time.Time              `json:"timestamp"`
 }
 
 // WebhookConfig represents webhook notification configuration.
@@ -205,10 +205,10 @@ func (d *NotificationDispatcher) NotifyAlert(ctx context.Context, ruleName, agen
 		Message:  fmt.Sprintf("Agent %s: value %.2f exceeds threshold %.2f", agentID, value, threshold),
 		Severity: severity,
 		Data: map[string]interface{}{
-			"rule_name":  ruleName,
-			"agent_id":   agentID,
-			"value":      value,
-			"threshold":  threshold,
+			"rule_name": ruleName,
+			"agent_id":  agentID,
+			"value":     value,
+			"threshold": threshold,
 		},
 		Timestamp: time.Now(),
 	}

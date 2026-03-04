@@ -280,11 +280,11 @@ func (h *Handler) StreamTaskOutput(c *gin.Context) {
 			"final":   true,
 		})
 		sendSSE(c, flusher, "complete", gin.H{
-			"task_id":    id,
-			"status":     task.Status,
-			"exit_code":  task.ExitCode,
-			"duration":   task.Duration,
-			"completed":  true,
+			"task_id":   id,
+			"status":    task.Status,
+			"exit_code": task.ExitCode,
+			"duration":  task.Duration,
+			"completed": true,
 		})
 		return
 	}
@@ -341,11 +341,11 @@ func (h *Handler) StreamTaskOutput(c *gin.Context) {
 					})
 				}
 				sendSSE(c, flusher, "complete", gin.H{
-					"task_id":    id,
-					"status":     currentTask.Status,
-					"exit_code":  currentTask.ExitCode,
-					"duration":   currentTask.Duration,
-					"completed":  true,
+					"task_id":   id,
+					"status":    currentTask.Status,
+					"exit_code": currentTask.ExitCode,
+					"duration":  currentTask.Duration,
+					"completed": true,
 				})
 				return
 			}

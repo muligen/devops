@@ -27,14 +27,14 @@ func (Version) TableName() string {
 
 // UpdateStatus represents the status of an agent update.
 type UpdateStatus struct {
-	ID         string    `json:"id" gorm:"primaryKey;type:uuid;default:gen_random_uuid()"`
-	AgentID    string    `json:"agent_id" gorm:"type:uuid;not null;index"`
-	VersionID  string    `json:"version_id" gorm:"type:uuid;not null;index"`
-	Status     string    `json:"status" gorm:"size:20;not null"` // pending, downloading, installing, success, failed
-	Message    string    `json:"message" gorm:"type:text"`
-	StartedAt  time.Time `json:"started_at"`
+	ID         string     `json:"id" gorm:"primaryKey;type:uuid;default:gen_random_uuid()"`
+	AgentID    string     `json:"agent_id" gorm:"type:uuid;not null;index"`
+	VersionID  string     `json:"version_id" gorm:"type:uuid;not null;index"`
+	Status     string     `json:"status" gorm:"size:20;not null"` // pending, downloading, installing, success, failed
+	Message    string     `json:"message" gorm:"type:text"`
+	StartedAt  time.Time  `json:"started_at"`
 	FinishedAt *time.Time `json:"finished_at"`
-	CreatedAt  time.Time `json:"created_at" gorm:"autoCreateTime"`
+	CreatedAt  time.Time  `json:"created_at" gorm:"autoCreateTime"`
 }
 
 // TableName returns the table name for UpdateStatus model.

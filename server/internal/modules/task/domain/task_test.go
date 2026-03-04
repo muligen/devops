@@ -10,10 +10,10 @@ import (
 
 func TestTaskStatus(t *testing.T) {
 	tests := []struct {
-		name     string
-		status   string
-		isPending bool
-		isRunning bool
+		name        string
+		status      string
+		isPending   bool
+		isRunning   bool
 		isCompleted bool
 	}{
 		{"pending", domain.StatusPending, true, false, false},

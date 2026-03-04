@@ -108,11 +108,11 @@ func (r *HTTPResponse) String() string {
 
 // WSClient provides WebSocket client functionality for testing
 type WSClient struct {
-	conn       *websocket.Conn
-	url        string
-	msgChan    chan []byte
-	errChan    chan error
-	closeChan  chan struct{}
+	conn      *websocket.Conn
+	url       string
+	msgChan   chan []byte
+	errChan   chan error
+	closeChan chan struct{}
 }
 
 // NewWSClient creates a new WebSocket client

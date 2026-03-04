@@ -155,7 +155,7 @@ func (h *Handler) GetDownloadURL(c *gin.Context) {
 
 	response.Success(c, gin.H{
 		"download_url": url,
-		"expires_in":  3600,
+		"expires_in":   3600,
 	})
 }
 

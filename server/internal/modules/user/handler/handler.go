@@ -29,14 +29,14 @@ func NewHandler(authService *authService.Service, userService *service.Service) 
 
 // UserResponse represents a user response.
 type UserResponse struct {
-	ID           string  `json:"id"`
-	Username     string  `json:"username"`
-	Email        string  `json:"email"`
-	Role         string  `json:"role"`
-	Status       string  `json:"status"`
-	LastLoginAt  *string `json:"last_login_at,omitempty"`
-	CreatedAt    string  `json:"created_at"`
-	UpdatedAt    string  `json:"updated_at"`
+	ID          string  `json:"id"`
+	Username    string  `json:"username"`
+	Email       string  `json:"email"`
+	Role        string  `json:"role"`
+	Status      string  `json:"status"`
+	LastLoginAt *string `json:"last_login_at,omitempty"`
+	CreatedAt   string  `json:"created_at"`
+	UpdatedAt   string  `json:"updated_at"`
 }
 
 // CreateUserRequest represents create user request.

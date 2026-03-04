@@ -171,21 +171,21 @@ func (r *Repository) DeleteAlertRule(ctx context.Context, id string) error {
 
 // Service provides monitoring business logic.
 type Service struct {
-	repo             *Repository
-	mq               *mq.Client
-	logger           *logger.Logger
-	batch            *MetricBatch
-	agentStatusFn   func(ctx context.Context, agentID string, status string) error
-	alertEventRepo   *AlertEventRepository
-	stopCh           chan struct{}
-	wg               sync.WaitGroup
+	repo           *Repository
+	mq             *mq.Client
+	logger         *logger.Logger
+	batch          *MetricBatch
+	agentStatusFn  func(ctx context.Context, agentID string, status string) error
+	alertEventRepo *AlertEventRepository
+	stopCh         chan struct{}
+	wg             sync.WaitGroup
 }
 
 // NewService creates a new monitor service.
 func NewService(repo *Repository) *Service {
 	return &Service{
-		repo:  repo,
-		batch: NewMetricBatch(),
+		repo:   repo,
+		batch:  NewMetricBatch(),
 		stopCh: make(chan struct{}),
 	}
 }
@@ -453,14 +453,14 @@ func (s *Service) evaluateRule(ctx context.Context, rule *domain.AlertRule) erro
 			// Publish alert event
 			if s.mq != nil {
 				_ = s.mq.PublishEvent(ctx, "alert.triggered", map[string]interface{}{
-					"rule_id":    rule.ID,
-					"rule_name":  rule.Name,
-					"agent_id":   agentID,
+					"rule_id":     rule.ID,
+					"rule_name":   rule.Name,
+					"agent_id":    agentID,
 					"metric_type": rule.MetricType,
-					"value":      value,
-					"threshold":  rule.Threshold,
-					"severity":   rule.Severity,
-					"timestamp":  time.Now().Unix(),
+					"value":       value,
+					"threshold":   rule.Threshold,
+					"severity":    rule.Severity,
+					"timestamp":   time.Now().Unix(),
 				})
 			}
 		}

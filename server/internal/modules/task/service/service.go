@@ -277,8 +277,8 @@ func (s *Service) dispatchTask(ctx context.Context, task *domain.Task) error {
 	command := map[string]interface{}{
 		"command_id":   task.ID,
 		"command_type": task.Type,
-		"params":        task.Params,
-		"timeout":       task.Timeout,
+		"params":       task.Params,
+		"timeout":      task.Timeout,
 	}
 
 	return s.dispatcher.SendCommand(task.AgentID, command)

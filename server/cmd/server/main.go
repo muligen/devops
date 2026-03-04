@@ -12,6 +12,7 @@ import (
 
 	"github.com/gin-gonic/gin"
 
+	"github.com/agentteams/server/internal/infrastructure/migrate"
 	agentHandler "github.com/agentteams/server/internal/modules/agent/handler"
 	agentService "github.com/agentteams/server/internal/modules/agent/service"
 	authHandler "github.com/agentteams/server/internal/modules/auth/handler"
@@ -20,7 +21,6 @@ import (
 	monitorService "github.com/agentteams/server/internal/modules/monitor/service"
 	taskHandler "github.com/agentteams/server/internal/modules/task/handler"
 	taskService "github.com/agentteams/server/internal/modules/task/service"
-	"github.com/agentteams/server/internal/infrastructure/migrate"
 	"github.com/agentteams/server/internal/pkg/cache"
 	"github.com/agentteams/server/internal/pkg/config"
 	"github.com/agentteams/server/internal/pkg/database"

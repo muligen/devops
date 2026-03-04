@@ -34,15 +34,15 @@ type Client struct {
 // Event types
 const (
 	// Agent events
-	EventAgentOnline  = "agent.online"
-	EventAgentOffline = "agent.offline"
+	EventAgentOnline    = "agent.online"
+	EventAgentOffline   = "agent.offline"
 	EventAgentHeartbeat = "agent.heartbeat"
 
 	// Task events
-	EventTaskCreated  = "task.created"
-	EventTaskStarted  = "task.started"
+	EventTaskCreated   = "task.created"
+	EventTaskStarted   = "task.started"
 	EventTaskCompleted = "task.completed"
-	EventTaskFailed   = "task.failed"
+	EventTaskFailed    = "task.failed"
 
 	// Update events
 	EventUpdateAvailable = "update.available"
@@ -50,8 +50,8 @@ const (
 
 // Exchange and queue names
 const (
-	ExchangeEvents = "agentteams.events"
-	QueueTasks     = "agentteams.tasks"
+	ExchangeEvents     = "agentteams.events"
+	QueueTasks         = "agentteams.tasks"
 	QueueNotifications = "agentteams.notifications"
 )
 
@@ -151,8 +151,8 @@ func (c *Client) PublishEvent(ctx context.Context, eventType string, data map[st
 		ctx,
 		ExchangeEvents,
 		eventType, // routing key
-		false,      // mandatory
-		false,      // immediate
+		false,     // mandatory
+		false,     // immediate
 		amqp.Publishing{
 			ContentType:  "application/json",
 			Body:         body,
@@ -173,7 +173,7 @@ func (c *Client) PublishTask(ctx context.Context, taskID string, taskData map[st
 
 	return c.channel.PublishWithContext(
 		ctx,
-		"",        // exchange (direct to queue)
+		"",         // exchange (direct to queue)
 		QueueTasks, // routing key (queue name)
 		false,      // mandatory
 		false,      // immediate

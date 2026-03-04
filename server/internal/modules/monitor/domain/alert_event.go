@@ -16,20 +16,20 @@ const (
 
 // AlertEvent represents an alert trigger event.
 type AlertEvent struct {
-	ID             string         `json:"id" gorm:"primaryKey;type:uuid;default:gen_random_uuid()"`
-	RuleID         *string        `json:"rule_id" gorm:"type:uuid"`
-	AgentID        string         `json:"agent_id" gorm:"type:uuid;not null"`
-	RuleName       string         `json:"rule_name" gorm:"-"`
-	AgentName      string         `json:"agent_name" gorm:"-"`
-	MetricValue    float64        `json:"metric_value" gorm:"not null"`
-	Threshold      float64        `json:"threshold" gorm:"not null"`
-	Status         string         `json:"status" gorm:"type:varchar(20);not null;default:'pending'"`
-	Message        string         `json:"message" gorm:"type:text"`
-	TriggeredAt    time.Time      `json:"triggered_at" gorm:"not null;default:NOW()"`
-	ResolvedAt     pq.NullTime    `json:"resolved_at" gorm:"type:timestamp with time zone"`
-	AcknowledgedBy *string        `json:"acknowledged_by" gorm:"type:uuid"`
-	AcknowledgedAt pq.NullTime    `json:"acknowledged_at" gorm:"type:timestamp with time zone"`
-	CreatedAt      time.Time      `json:"created_at" gorm:"not null;default:NOW()"`
+	ID             string      `json:"id" gorm:"primaryKey;type:uuid;default:gen_random_uuid()"`
+	RuleID         *string     `json:"rule_id" gorm:"type:uuid"`
+	AgentID        string      `json:"agent_id" gorm:"type:uuid;not null"`
+	RuleName       string      `json:"rule_name" gorm:"-"`
+	AgentName      string      `json:"agent_name" gorm:"-"`
+	MetricValue    float64     `json:"metric_value" gorm:"not null"`
+	Threshold      float64     `json:"threshold" gorm:"not null"`
+	Status         string      `json:"status" gorm:"type:varchar(20);not null;default:'pending'"`
+	Message        string      `json:"message" gorm:"type:text"`
+	TriggeredAt    time.Time   `json:"triggered_at" gorm:"not null;default:NOW()"`
+	ResolvedAt     pq.NullTime `json:"resolved_at" gorm:"type:timestamp with time zone"`
+	AcknowledgedBy *string     `json:"acknowledged_by" gorm:"type:uuid"`
+	AcknowledgedAt pq.NullTime `json:"acknowledged_at" gorm:"type:timestamp with time zone"`
+	CreatedAt      time.Time   `json:"created_at" gorm:"not null;default:NOW()"`
 
 	// Relations
 	Rule         *AlertRule `json:"rule,omitempty" gorm:"foreignKey:RuleID"`

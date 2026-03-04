@@ -197,7 +197,7 @@ func (r *Repository) UpdateStatus(ctx context.Context, id, status string) error 
 	result := r.db.WithContext(ctx).Model(&domain.Agent{}).
 		Where("id = ? AND deleted_at IS NULL", id).
 		Updates(map[string]interface{}{
-			"status":      status,
+			"status":       status,
 			"last_seen_at": time.Now(),
 		})
 	if result.Error != nil {

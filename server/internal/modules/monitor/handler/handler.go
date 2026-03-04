@@ -24,7 +24,7 @@ func NewHandler(svc *service.Service) *Handler {
 
 // MetricResponse represents a metric response.
 type MetricResponse struct {
-	ID            string `json:"id"`
+	ID            string  `json:"id"`
 	AgentID       string  `json:"agent_id"`
 	CPUUsage      float64 `json:"cpu_usage"`
 	MemoryTotal   int64   `json:"memory_total"`
@@ -185,17 +185,17 @@ func (h *Handler) CreateAlertRule(c *gin.Context) {
 
 // AlertRuleResponse represents an alert rule response.
 type AlertRuleResponse struct {
-	ID          string `json:"id"`
-	Name        string `json:"name"`
-	Description string `json:"description"`
-	MetricType  string `json:"metric_type"`
-	Condition   string `json:"condition"`
+	ID          string  `json:"id"`
+	Name        string  `json:"name"`
+	Description string  `json:"description"`
+	MetricType  string  `json:"metric_type"`
+	Condition   string  `json:"condition"`
 	Threshold   float64 `json:"threshold"`
-	Duration    int    `json:"duration"`
-	Severity    string `json:"severity"`
-	Enabled     bool   `json:"enabled"`
-	CreatedAt   string `json:"created_at"`
-	UpdatedAt   string `json:"updated_at"`
+	Duration    int     `json:"duration"`
+	Severity    string  `json:"severity"`
+	Enabled     bool    `json:"enabled"`
+	CreatedAt   string  `json:"created_at"`
+	UpdatedAt   string  `json:"updated_at"`
 }
 
 // ListAlertRules handles GET /api/v1/alerts/rules
@@ -316,9 +316,9 @@ type AlertEventResponse struct {
 func (h *Handler) GetAlertHistory(c *gin.Context) {
 	// Parse query parameters
 	opts := service.AlertEventListOptions{
-		Status: c.Query("status"),
+		Status:  c.Query("status"),
 		AgentID: c.Query("agent_id"),
-		RuleID: c.Query("rule_id"),
+		RuleID:  c.Query("rule_id"),
 	}
 
 	// Parse time range

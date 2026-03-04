@@ -34,25 +34,25 @@ func (h *Handler) SetLatestMetricsService(svc LatestMetricsService) {
 
 // CreateAgentRequest represents create agent request.
 type CreateAgentRequest struct {
-	Name     string          `json:"name" binding:"required,min=1,max=100"`
-	Metadata domain.JSONB   `json:"metadata"`
+	Name     string       `json:"name" binding:"required,min=1,max=100"`
+	Metadata domain.JSONB `json:"metadata"`
 }
 
 // AgentResponse represents agent response.
 type AgentResponse struct {
-	ID           string          `json:"id"`
-	Name         string          `json:"name"`
-	Status       string          `json:"status"`
-	Version      string          `json:"version"`
-	Hostname     string          `json:"hostname"`
-	IPAddress    string          `json:"ip_address"`
-	OSInfo       string          `json:"os_info"`
-	Metadata     domain.JSONB    `json:"metadata"`
-	LastSeenAt   *string         `json:"last_seen_at"`
-	CreatedAt    string          `json:"created_at"`
-	CPUUsage     *float64        `json:"cpu_usage,omitempty"`
-	MemoryUsage  *float64        `json:"memory_usage,omitempty"`
-	DiskUsage    *float64        `json:"disk_usage,omitempty"`
+	ID          string       `json:"id"`
+	Name        string       `json:"name"`
+	Status      string       `json:"status"`
+	Version     string       `json:"version"`
+	Hostname    string       `json:"hostname"`
+	IPAddress   string       `json:"ip_address"`
+	OSInfo      string       `json:"os_info"`
+	Metadata    domain.JSONB `json:"metadata"`
+	LastSeenAt  *string      `json:"last_seen_at"`
+	CreatedAt   string       `json:"created_at"`
+	CPUUsage    *float64     `json:"cpu_usage,omitempty"`
+	MemoryUsage *float64     `json:"memory_usage,omitempty"`
+	DiskUsage   *float64     `json:"disk_usage,omitempty"`
 }
 
 // CreateAgent handles agent creation.
@@ -83,6 +83,7 @@ func (h *Handler) CreateAgent(c *gin.Context) {
 }
 
 // ListAgents handles listing agents.
+//
 //nolint:gocyclo // complex handler with validation logic
 func (h *Handler) ListAgents(c *gin.Context) {
 	page := 1
