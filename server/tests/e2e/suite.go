@@ -292,7 +292,7 @@ func extractRabbitPort(url string) int {
 			hostPort := strings.Split(hostPortVhost[0], ":")
 			if len(hostPort) > 1 {
 				var port int
-				fmt.Sscanf(hostPort[1], "%d", &port)
+				_, _ = fmt.Sscanf(hostPort[1], "%d", &port)
 				return port
 			}
 		}

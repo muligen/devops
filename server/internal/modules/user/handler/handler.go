@@ -377,7 +377,10 @@ func getUserID(c *gin.Context) string {
 	if !exists {
 		return ""
 	}
-	return userID.(string)
+	if s, ok := userID.(string); ok {
+		return s
+	}
+	return ""
 }
 
 // parseInt parses a string to int.

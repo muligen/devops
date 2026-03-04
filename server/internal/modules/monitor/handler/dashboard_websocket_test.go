@@ -124,7 +124,7 @@ func TestDashboardWSHandler_Handle_ValidConnection(t *testing.T) {
 	defer conn.Close()
 
 	// Read the connected message
-	conn.SetReadDeadline(time.Now().Add(5 * time.Second))
+	_ = conn.SetReadDeadline(time.Now().Add(5 * time.Second))
 	_, message, err := conn.ReadMessage()
 	require.NoError(t, err)
 
@@ -170,7 +170,7 @@ func TestDashboardWSHandler_Handle_PingPong(t *testing.T) {
 	defer conn.Close()
 
 	// Read connected message first
-	conn.SetReadDeadline(time.Now().Add(5 * time.Second))
+	_ = conn.SetReadDeadline(time.Now().Add(5 * time.Second))
 	_, _, err = conn.ReadMessage()
 	require.NoError(t, err)
 
@@ -180,7 +180,7 @@ func TestDashboardWSHandler_Handle_PingPong(t *testing.T) {
 	require.NoError(t, err)
 
 	// Read pong response
-	conn.SetReadDeadline(time.Now().Add(5 * time.Second))
+	_ = conn.SetReadDeadline(time.Now().Add(5 * time.Second))
 	_, message, err := conn.ReadMessage()
 	require.NoError(t, err)
 
@@ -221,7 +221,7 @@ func TestDashboardWSHandler_Handle_BearerToken(t *testing.T) {
 	defer conn.Close()
 
 	// Read connected message
-	conn.SetReadDeadline(time.Now().Add(5 * time.Second))
+	_ = conn.SetReadDeadline(time.Now().Add(5 * time.Second))
 	_, message, err := conn.ReadMessage()
 	require.NoError(t, err)
 
@@ -301,7 +301,7 @@ func TestDashboardWSHandler_ClientCount(t *testing.T) {
 	defer conn1.Close()
 
 	// Read connected message
-	conn1.SetReadDeadline(time.Now().Add(2 * time.Second))
+	_ = conn1.SetReadDeadline(time.Now().Add(2 * time.Second))
 	_, _, err = conn1.ReadMessage()
 	require.NoError(t, err)
 
@@ -368,7 +368,7 @@ func TestDashboardWSHandler_MultipleConnections(t *testing.T) {
 		conns = append(conns, conn)
 
 		// Read connected message
-		conn.SetReadDeadline(time.Now().Add(2 * time.Second))
+		_ = conn.SetReadDeadline(time.Now().Add(2 * time.Second))
 		_, _, err = conn.ReadMessage()
 		require.NoError(t, err)
 	}

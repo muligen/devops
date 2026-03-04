@@ -98,7 +98,9 @@ func GetUserID(c *gin.Context) string {
 // GetUsername extracts username from context.
 func GetUsername(c *gin.Context) string {
 	if username, exists := c.Get("username"); exists {
-		return username.(string)
+		if s, ok := username.(string); ok {
+			return s
+		}
 	}
 	return ""
 }
@@ -106,7 +108,9 @@ func GetUsername(c *gin.Context) string {
 // GetRole extracts role from context.
 func GetRole(c *gin.Context) string {
 	if role, exists := c.Get("role"); exists {
-		return role.(string)
+		if s, ok := role.(string); ok {
+			return s
+		}
 	}
 	return ""
 }
