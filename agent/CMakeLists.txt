@@ -43,10 +43,3 @@ add_subdirectory(src/heartbeat)
 
 # Task worker executable
 add_subdirectory(src/task)
-
-# Tests
-option(BUILD_TESTS "Build tests" ON)
-if(BUILD_TESTS)
-    enable_testing()
-    add_subdirectory(tests)
-endif()

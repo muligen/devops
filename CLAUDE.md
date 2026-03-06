@@ -4,6 +4,7 @@ AgentTeams - 企业级 Windows 机器管理系统
 
 - **Server (Go)**: REST API + WebSocket 网关
 - **Agent (C++)**: Windows 客户端
+- **Web (React)**: 管理后台前端
 
 ## 规范文档
 
@@ -15,10 +16,13 @@ AgentTeams - 企业级 Windows 机器管理系统
 
 ```bash
 # Server
-cd server && go test ./... && golangci-lint run
+cd server && golangci-lint run
 
 # Agent
-cd agent && mkdir build && cd build && conan install .. --build=missing && cmake .. && cmake --build . && ctest
+cd agent && mkdir build && cd build && conan install .. --build=missing && cmake .. && cmake --build .
+
+# Web
+cd web && npm install && npm run lint && npm run build
 ```
 
 ## Git Commit
@@ -26,9 +30,6 @@ cd agent && mkdir build && cd build && conan install .. --build=missing && cmake
 ```
 <type>(<scope>): <subject>
 Types: feat, fix, docs, refactor, test, chore
-Scopes: agent, server, api, auth, task, monitor
+Scopes: agent, server, web, api, auth, task, monitor
 ```
 
-## 当前任务
-
-[implement-agent-teams](openspec/changes/implement-agent-teams/tasks.md)

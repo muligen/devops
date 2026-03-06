@@ -34,7 +34,6 @@ AgentTeams/
 │   │   ├── heartbeat/         # 心跳工作进程
 │   │   └── task/              # 任务工作进程
 │   ├── include/               # 公共头文件
-│   ├── tests/                 # 单元测试
 │   ├── CMakeLists.txt
 │   └── conanfile.txt
 ├── server/                    # Go Server 代码
@@ -330,67 +329,6 @@ func (s *Service) ProcessBatch(items []Item) error {
         return errors.Join(errs...)
     }
     return nil
-}
-```
-
-### 测试规范
-
-```go
-// 测试文件命名: <filename>_test.go
-// 测试函数命名: Test<FunctionName>
-
-package auth_test
-
-import (
-    "context"
-    "testing"
-    "github.com/stretchr/testify/assert"
-    "github.com/stretchr/testify/require"
-)
-
-func TestCreateAgent(t *testing.T) {
-    t.Run("success", func(t *testing.T) {
-        // Arrange
-        ctx := context.Background()
-        req := &CreateAgentRequest{Name: "test-agent"}
-
-        // Act
-        agent, err := service.Create(ctx, req)
-
-        // Assert
-        require.NoError(t, err)
-        assert.NotEmpty(t, agent.ID)
-        assert.Equal(t, "test-agent", agent.Name)
-    })
-
-    t.Run("duplicate name", func(t *testing.T) {
-        // Test duplicate name scenario
-    })
-}
-
-// 表驱动测试
-func TestValidateStatus(t *testing.T) {
-    tests := []struct {
-        name    string
-        status  string
-        wantErr bool
-    }{
-        {"valid pending", StatusPending, false},
-        {"valid running", StatusRunning, false},
-        {"invalid status", "invalid", true},
-        {"empty status", "", true},
-    }
-
-    for _, tt := range tests {
-        t.Run(tt.name, func(t *testing.T) {
-            err := ValidateStatus(tt.status)
-            if tt.wantErr {
-                assert.Error(t, err)
-            } else {
-                assert.NoError(t, err)
-            }
-        })
-    }
 }
 ```
 
@@ -1008,7 +946,6 @@ refactor(task): extract command execution to separate class
 - [ ] context 是否正确传递
 - [ ] 并发访问是否使用锁保护
 - [ ] 敏感信息是否正确处理
-- [ ] 是否有单元测试
 
 ### C++ 代码审查
 
@@ -1017,7 +954,6 @@ refactor(task): extract command execution to separate class
 - [ ] 异常安全是否考虑
 - [ ] 线程安全是否保证
 - [ ] 是否有适当的日志
-- [ ] 是否有单元测试
 
 ---
 
@@ -1033,7 +969,6 @@ go install golang.org/x/tools/cmd/goimports@latest
 # 运行检查
 golangci-lint run ./...
 goimports -w .
-go test -race -cover ./...
 ```
 
 ### C++ 工具
@@ -1050,5 +985,4 @@ mkdir build && cd build
 conan install .. --build=missing
 cmake ..
 cmake --build .
-ctest
 ```

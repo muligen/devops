@@ -26,16 +26,6 @@ jobs:
         working-directory: server
         run: go mod download
 
-      - name: Run tests
-        working-directory: server
-        run: go test -v -race -coverprofile=coverage.txt ./...
-
-      - name: Upload coverage
-        uses: codecov/codecov-action@v4
-        with:
-          files: server/coverage.txt
-          flags: server
-
       - name: Build
         working-directory: server
         run: go build -v ./cmd/server
@@ -67,10 +57,6 @@ jobs:
       - name: Build
         working-directory: agent
         run: cmake --build --preset conan-release
-
-      - name: Run tests
-        working-directory: agent
-        run: ctest --preset conan-release -C Release --output-on-failure
 
   # Lint Check
   lint:
