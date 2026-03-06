@@ -1,3 +1,4 @@
+import { useMemo } from 'react'
 import { Card } from 'antd'
 import ReactECharts from 'echarts-for-react'
 import type { TaskTrendItem } from '@/types'
@@ -8,7 +9,7 @@ interface TaskTrendChartProps {
 }
 
 export default function TaskTrendChart({ data, loading }: TaskTrendChartProps) {
-  const option = {
+  const option = useMemo(() => ({
     tooltip: {
       trigger: 'axis',
       axisPointer: {
@@ -115,7 +116,7 @@ export default function TaskTrendChart({ data, loading }: TaskTrendChartProps) {
         data: data?.map((item) => item.failed) || [],
       },
     ],
-  }
+  }), [data])
 
   return (
     <Card title="任务执行趋势 (24小时)" loading={loading}>

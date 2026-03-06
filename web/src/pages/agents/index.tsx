@@ -1,5 +1,5 @@
-import { useEffect, useState, useCallback } from 'react'
-import { Table, Card, Tag, Input, Select, Space, Button, Typography, Progress, Tooltip } from 'antd'
+import { useEffect, useState, useCallback, useMemo } from 'react'
+import { Table, Card, Tag, Input, Select, Space, Button, Typography, Progress, Tooltip, message } from 'antd'
 import type { TablePaginationConfig, FilterValue, SorterResult } from 'antd/es/table/interface'
 import { ReloadOutlined } from '@ant-design/icons'
 import { useNavigate } from 'react-router-dom'
@@ -9,6 +9,10 @@ import type { Agent, AgentListParams } from '@/types'
 
 const { Title } = Typography
 const { Search } = Input
+
+// 提取样式常量
+const PAGE_HEADER_STYLE = { marginBottom: 16, display: 'flex', justifyContent: 'space-between', alignItems: 'center' } as const
+const FILTER_SPACE_STYLE = { marginBottom: 16 } as const
 
 export default function AgentsPage() {
   const navigate = useNavigate()
@@ -32,6 +36,7 @@ export default function AgentsPage() {
       setTotal(response.total)
     } catch (error) {
       console.error('Failed to fetch agents:', error)
+      message.error('加载 Agent 列表失败')
     } finally {
       setLoading(false)
     }
@@ -41,7 +46,7 @@ export default function AgentsPage() {
     fetchAgents()
   }, [fetchAgents])
 
-  const columns = [
+  const columns = useMemo(() => [
     {
       title: '名称',
       dataIndex: 'name',
@@ -143,7 +148,7 @@ export default function AgentsPage() {
       width: 120,
       render: (time: string) => formatRelativeTime(time),
     },
-  ]
+  ], [navigate])
 
   const handleTableChange = (
     pagination: TablePaginationConfig,
@@ -162,7 +167,7 @@ export default function AgentsPage() {
 
   return (
     <div>
-      <div style={{ marginBottom: 16, display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+      <div style={PAGE_HEADER_STYLE}>
         <Title level={4} style={{ margin: 0 }}>Agent 管理</Title>
         <Button icon={<ReloadOutlined />} onClick={fetchAgents}>
           刷新
@@ -170,7 +175,7 @@ export default function AgentsPage() {
       </div>
 
       <Card>
-        <Space style={{ marginBottom: 16 }}>
+        <Space style={FILTER_SPACE_STYLE}>
           <Search
             placeholder="搜索 Agent 名称/主机名"
             allowClear

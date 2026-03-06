@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react'
-import { Row, Col, Typography } from 'antd'
+import { Row, Col, Typography, message } from 'antd'
 import { useWebSocket } from '@/hooks'
 import { useDashboardStore } from '@/stores'
 import { dashboardApi, agentApi, alertApi } from '@/api'
@@ -35,6 +35,7 @@ export default function DashboardPage() {
         setAlerts(alertsRes.data)
       } catch (error) {
         console.error('Failed to fetch dashboard data:', error)
+        message.error('加载仪表盘数据失败')
       } finally {
         setLoading(false)
       }

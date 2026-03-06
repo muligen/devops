@@ -153,8 +153,10 @@ export function useWebSocket() {
     }
   }, [token, connect, disconnect])
 
+  const isConnected = useWebSocketStore((state) => state.isConnected)
+
   return {
-    isConnected: useWebSocketStore.getState().isConnected,
+    isConnected,
     connect,
     disconnect,
   }
