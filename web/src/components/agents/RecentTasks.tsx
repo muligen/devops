@@ -41,15 +41,18 @@ export default function RecentTasks({ agentId, limit = 10, onViewTask }: RecentT
   const columns = [
     {
       title: '命令',
-      dataIndex: 'command',
       key: 'command',
       ellipsis: true,
-      render: (command: string, record: Task) => (
-        <Text code style={{ fontSize: 12 }}>
-          {record.command_type === 'shell' ? '$ ' : ''}
-          {command}
-        </Text>
-      ),
+      render: (_: unknown, record: Task) => {
+        const command = record.params?.command as string || '-'
+        const isShell = record.type === 'exec_shell'
+        return (
+          <Text code style={{ fontSize: 12 }}>
+            {isShell ? '$ ' : ''}
+            {command}
+          </Text>
+        )
+      },
     },
     {
       title: '状态',

@@ -73,21 +73,24 @@ export default function TasksPage() {
       render: (id: string) => <Text style={{ fontSize: 12 }}>{id.slice(0, 8)}</Text>,
     },
     {
-      title: '命令类型',
-      dataIndex: 'command_type',
-      key: 'command_type',
+      title: '类型',
+      key: 'type',
       width: 100,
-      render: (type: string) => (
-        <Tag color={type === 'shell' ? 'blue' : 'green'}>
-          {type === 'shell' ? 'Shell' : '内置'}
+      render: (_: unknown, record: Task) => (
+        <Tag color={record.type === 'exec_shell' ? 'blue' : 'green'}>
+          {record.type === 'exec_shell' ? 'Shell' : record.type}
         </Tag>
       ),
     },
     {
       title: '命令',
-      dataIndex: 'command',
       key: 'command',
       ellipsis: true,
+      render: (_: unknown, record: Task) => (
+        <Text code style={{ fontSize: 12 }}>
+          {record.params?.command as string || '-'}
+        </Text>
+      ),
     },
     {
       title: '状态',
@@ -218,10 +221,10 @@ export default function TasksPage() {
                   {getStatusText(selectedTask.status)}
                 </Tag>
               </Descriptions.Item>
-              <Descriptions.Item label="命令类型">{selectedTask.command_type}</Descriptions.Item>
+              <Descriptions.Item label="任务类型">{selectedTask.type}</Descriptions.Item>
               <Descriptions.Item label="退出码">{selectedTask.exit_code ?? '-'}</Descriptions.Item>
               <Descriptions.Item label="命令" span={2}>
-                <Text code>{selectedTask.command}</Text>
+                <Text code>{selectedTask.params?.command as string || '-'}</Text>
               </Descriptions.Item>
               <Descriptions.Item label="超时">{formatDuration(selectedTask.timeout)}</Descriptions.Item>
               <Descriptions.Item label="优先级">{selectedTask.priority}</Descriptions.Item>
