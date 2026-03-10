@@ -7,11 +7,6 @@ run:
   tests: true
   modules-download-mode: readonly
 
-issues:
-  exclude-dirs:
-    - vendor
-    - third_party
-
 output:
   formats:
     - format: colored-line-number
@@ -122,6 +117,10 @@ linters-settings:
     for-loops: false
 
 issues:
+  exclude-dirs:
+    - vendor
+    - third_party
+
   exclude-rules:
     # 测试文件放宽规则
     - path: _test\.go
