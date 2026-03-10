@@ -1,0 +1,56 @@
+server:
+  addr: ":8080"
+  read_timeout: "10s"
+  write_timeout: "10s"
+  idle_timeout: "60s"
+
+database:
+  host: "localhost"
+  port: 5432
+  user: "test"
+  password: "test"
+  name: "agentteams_test"
+  sslmode: "disable"
+  max_open_conns: 10
+  max_idle_conns: 5
+  conn_max_lifetime: "5m"
+
+redis:
+  host: "localhost"
+  port: 6379
+  password: ""
+  db: 1
+  pool_size: 5
+
+rabbitmq:
+  host: "localhost"
+  port: 5672
+  user: "guest"
+  password: "guest"
+  vhost: "/"
+
+minio:
+  endpoint: "localhost:9000"
+  access_key: "minioadmin"
+  secret_key: "minioadmin"
+  use_ssl: false
+  bucket: "agent-updates-test"
+
+jwt:
+  secret: "test-secret-key-for-testing-only"
+  expiry: "1h"
+  refresh_expiry: "24h"
+
+log:
+  level: "debug"
+  format: "console"
+  output: "stdout"
+
+agent:
+  heartbeat_timeout: "30s"
+  session_expiry: "5m"
+
+task:
+  max_concurrent: 5
+  default_timeout: "1m"
+  result_retention: "1h"

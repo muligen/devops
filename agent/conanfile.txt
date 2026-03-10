@@ -4,6 +4,7 @@ yaml-cpp/0.7.0
 spdlog/1.12.0
 boost/1.83.0
 openssl/3.2.0
+gtest/1.14.0
 
 [generators]
 CMakeDeps

@@ -43,3 +43,11 @@ add_subdirectory(src/heartbeat)
 
 # Task worker executable
 add_subdirectory(src/task)
+
+# Tests
+option(BUILD_TESTING "Build tests" ON)
+if(BUILD_TESTING)
+    enable_testing()
+    find_package(GTest REQUIRED)
+    add_subdirectory(test)
+endif()

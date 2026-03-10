@@ -1,0 +1,285 @@
+name: Test
+
+on:
+  push:
+    branches: [main, develop]
+  pull_request:
+    branches: [main, develop]
+
+env:
+  GO_VERSION: '1.24'
+
+jobs:
+  # Server Tests
+  server-test:
+    name: Server Tests
+    runs-on: ubuntu-latest
+
+    services:
+      postgres:
+        image: postgres:16-alpine
+        env:
+          POSTGRES_USER: test
+          POSTGRES_PASSWORD: test
+          POSTGRES_DB: agentteams_test
+        ports:
+          - 5433:5432
+        options: >-
+          --health-cmd pg_isready
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+
+      redis:
+        image: redis:7-alpine
+        ports:
+          - 6380:6379
+        options: >-
+          --health-cmd "redis-cli ping"
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+
+      rabbitmq:
+        image: rabbitmq:3-alpine
+        ports:
+          - 5673:5672
+        options: >-
+          --health-cmd "rabbitmqctl status"
+          --health-interval 10s
+          --health-timeout 10s
+          --health-retries 5
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup Go
+        uses: actions/setup-go@v5
+        with:
+          go-version: ${{ env.GO_VERSION }}
+
+      - name: Download dependencies
+        working-directory: server
+        run: go mod download
+
+      - name: Initialize database schema
+        run: |
+          PGPASSWORD=test psql -h localhost -p 5433 -U test -d agentteams_test << 'EOF'
+          CREATE TABLE users (
+              id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+              username VARCHAR(100) NOT NULL UNIQUE,
+              password_hash VARCHAR(255) NOT NULL,
+              email VARCHAR(255) UNIQUE,
+              role VARCHAR(20) NOT NULL DEFAULT 'viewer',
+              status VARCHAR(20) NOT NULL DEFAULT 'active',
+              last_login_at TIMESTAMP WITH TIME ZONE,
+              created_at TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT NOW(),
+              updated_at TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT NOW(),
+              deleted_at TIMESTAMP WITH TIME ZONE
+          );
+
+          CREATE TABLE agents (
+              id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+              name VARCHAR(100) NOT NULL UNIQUE,
+              token_hash VARCHAR(255) NOT NULL,
+              status VARCHAR(20) NOT NULL DEFAULT 'offline',
+              version VARCHAR(20) NOT NULL DEFAULT '0.0.0',
+              hostname VARCHAR(255),
+              ip_address VARCHAR(45),
+              os_info VARCHAR(255),
+              metadata JSONB DEFAULT '{}',
+              last_seen_at TIMESTAMP WITH TIME ZONE,
+              created_at TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT NOW(),
+              updated_at TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT NOW(),
+              deleted_at TIMESTAMP WITH TIME ZONE
+          );
+
+          CREATE TABLE tasks (
+              id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+              agent_id UUID NOT NULL REFERENCES agents(id) ON DELETE CASCADE,
+              type VARCHAR(50) NOT NULL,
+              params JSONB DEFAULT '{}',
+              status VARCHAR(20) NOT NULL DEFAULT 'pending',
+              priority INTEGER NOT NULL DEFAULT 0,
+              timeout INTEGER NOT NULL DEFAULT 300,
+              result JSONB,
+              output TEXT,
+              exit_code INTEGER,
+              duration FLOAT,
+              created_by UUID REFERENCES users(id),
+              created_at TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT NOW(),
+              started_at TIMESTAMP WITH TIME ZONE,
+              completed_at TIMESTAMP WITH TIME ZONE
+          );
+
+          CREATE TABLE agent_metrics (
+              id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+              agent_id UUID NOT NULL REFERENCES agents(id) ON DELETE CASCADE,
+              cpu_usage FLOAT NOT NULL DEFAULT 0,
+              memory_total BIGINT NOT NULL DEFAULT 0,
+              memory_used BIGINT NOT NULL DEFAULT 0,
+              memory_percent FLOAT NOT NULL DEFAULT 0,
+              disk_total BIGINT NOT NULL DEFAULT 0,
+              disk_used BIGINT NOT NULL DEFAULT 0,
+              disk_percent FLOAT NOT NULL DEFAULT 0,
+              uptime BIGINT NOT NULL DEFAULT 0,
+              collected_at TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT NOW()
+          );
+
+          CREATE TABLE versions (
+              id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+              version VARCHAR(20) NOT NULL,
+              platform VARCHAR(50) NOT NULL DEFAULT 'windows',
+              file_url VARCHAR(500),
+              file_hash VARCHAR(64),
+              file_size BIGINT,
+              signature TEXT,
+              release_notes TEXT,
+              is_active BOOLEAN NOT NULL DEFAULT true,
+              created_at TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT NOW(),
+              created_by UUID REFERENCES users(id),
+              UNIQUE(version, platform)
+          );
+
+          CREATE TABLE alert_events (
+              id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+              rule_id UUID,
+              agent_id UUID,
+              status VARCHAR(20) NOT NULL DEFAULT 'firing',
+              message TEXT,
+              fired_at TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT NOW(),
+              resolved_at TIMESTAMP WITH TIME ZONE,
+              created_at TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT NOW()
+          );
+
+          CREATE TABLE schema_migrations (version bigint NOT NULL PRIMARY KEY, dirty boolean NOT NULL);
+          INSERT INTO schema_migrations VALUES (3, false);
+          EOF
+
+      - name: Run tests
+        working-directory: server
+        env:
+          DB_HOST: localhost
+          DB_PORT: 5433
+          REDIS_HOST: localhost
+          REDIS_PORT: 6380
+        run: go test -v -race -coverprofile=coverage.out ./test/...
+
+      - name: Upload coverage
+        uses: codecov/codecov-action@v4
+        with:
+          files: server/coverage.out
+          flags: server
+          fail_ci_if_error: false
+
+  # Agent Build and Tests (Windows)
+  agent-test:
+    name: Agent Tests (Windows)
+    runs-on: windows-latest
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup MSVC
+        uses: ilammy/msvc-dev-cmd@v1
+
+      - name: Install Conan
+        run: pip install conan
+
+      - name: Configure Conan
+        run: conan profile detect --force
+
+      - name: Install dependencies
+        working-directory: agent
+        run: conan install . --build=missing -s build_type=Debug
+
+      - name: Configure CMake
+        working-directory: agent
+        run: cmake --preset conan-default -DBUILD_TESTING=ON
+
+      - name: Build
+        working-directory: agent
+        run: cmake --build --preset conan-debug
+
+      - name: Run tests
+        working-directory: agent
+        run: ctest --preset conan-debug --output-on-failure
+
+  # Web E2E Tests
+  web-e2e:
+    name: Web E2E Tests
+    runs-on: ubuntu-latest
+    needs: server-test
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'npm'
+          cache-dependency-path: web/package-lock.json
+
+      - name: Install dependencies
+        working-directory: web
+        run: npm ci
+
+      - name: Install Playwright browsers
+        working-directory: web
+        run: npx playwright install --with-deps
+
+      - name: Run E2E tests
+        working-directory: web
+        run: npm run test:e2e
+        continue-on-error: true
+        env:
+          E2E_BASE_URL: ${{ secrets.E2E_BASE_URL || 'http://localhost:3000' }}
+          TEST_USERNAME: ${{ secrets.TEST_USERNAME }}
+          TEST_PASSWORD: ${{ secrets.TEST_PASSWORD }}
+
+      - name: Upload Playwright report
+        uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: playwright-report
+          path: web/playwright-report/
+          retention-days: 30
+
+  # Lint Check
+  lint:
+    name: Lint
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup Go
+        uses: actions/setup-go@v5
+        with:
+          go-version: ${{ env.GO_VERSION }}
+
+      - name: golangci-lint
+        uses: golangci/golangci-lint-action@v4
+        with:
+          working-directory: server
+          version: latest
+
+  # Commit Message Check
+  commitlint:
+    name: Commit Message
+    runs-on: ubuntu-latest
+    if: github.event_name == 'pull_request'
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Check commit messages
+        uses: wagoid/commitlint-github-action@v6

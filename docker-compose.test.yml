@@ -1,0 +1,78 @@
+# Docker Compose for Test Environment
+# Usage: docker-compose -f docker-compose.test.yml up -d
+
+services:
+  postgres:
+    image: postgres:16-alpine
+    container_name: agentteams-test-postgres
+    environment:
+      POSTGRES_USER: test
+      POSTGRES_PASSWORD: test
+      POSTGRES_DB: agentteams_test
+    ports:
+      - "5433:5432"
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U test -d agentteams_test"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+    volumes:
+      - postgres_test_data:/var/lib/postgresql/data
+    networks:
+      - agentteams-test-network
+
+  redis:
+    image: redis:7-alpine
+    container_name: agentteams-test-redis
+    ports:
+      - "6380:6379"
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+    networks:
+      - agentteams-test-network
+
+  rabbitmq:
+    image: rabbitmq:3-management-alpine
+    container_name: agentteams-test-rabbitmq
+    environment:
+      RABBITMQ_DEFAULT_USER: guest
+      RABBITMQ_DEFAULT_PASS: guest
+    ports:
+      - "5673:5672"
+      - "15673:15672"
+    healthcheck:
+      test: ["CMD", "rabbitmqctl", "status"]
+      interval: 10s
+      timeout: 10s
+      retries: 5
+    networks:
+      - agentteams-test-network
+
+  # MinIO for object storage (optional, for update service tests)
+  minio:
+    image: minio/minio:latest
+    container_name: agentteams-test-minio
+    environment:
+      MINIO_ROOT_USER: minioadmin
+      MINIO_ROOT_PASSWORD: minioadmin
+    command: server /data --console-address ":9001"
+    ports:
+      - "9002:9000"
+      - "9003:9001"
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:9000/minio/health/live"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    networks:
+      - agentteams-test-network
+
+volumes:
+  postgres_test_data:
+
+networks:
+  agentteams-test-network:
+    driver: bridge
