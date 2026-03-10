@@ -1,6 +1,7 @@
 import { useEffect } from 'react'
 import { notification } from 'antd'
 import { WarningOutlined, CheckCircleOutlined } from '@ant-design/icons'
+import { useWebSocket } from '@/hooks'
 import { useWebSocketStore } from '@/stores'
 import { setAlertHandler, clearAlertHandler } from './alertHandler'
 import type { AlertMessage } from '@/types'
@@ -11,6 +12,9 @@ interface AlertNotificationProviderProps {
 
 export default function AlertNotificationProvider({ children }: AlertNotificationProviderProps) {
   const isConnected = useWebSocketStore((state) => state.isConnected)
+
+  // Initialize WebSocket connection at app level (not per-page)
+  useWebSocket()
 
   useEffect(() => {
     setAlertHandler((alert: AlertMessage) => {

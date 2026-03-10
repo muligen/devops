@@ -223,3 +223,33 @@ g_context->ws_client->SetMessageCallback(
 | 2026-03-10 | #5 | React Hooks 规则违反导致图表不显示 | ✅ 已修复 |
 | 2026-03-10 | #6 | 后端时区问题导致时间范围查询不准确 | ✅ 已修复 |
 | 2026-03-10 | #7 | 前端未传递 limit 导致数据被截断 | ✅ 已修复 |
+| 2026-03-10 | #8 | WebSocket 频繁断开重连提示 | ✅ 已修复 |
+
+---
+
+### Bug #8: WebSocket 频繁断开重连提示
+
+**严重程度**: 中
+
+**问题描述**:
+前端时不时弹出 "WebSocket 连接已断开，正在尝试重连..." 提示，用户体验差。
+
+**根本原因**:
+`useWebSocket` hook 在 `DashboardPage` 组件中调用：
+- `DashboardPage` 是路由组件，导航到其他页面时会卸载
+- 组件卸载时，`useWebSocket` 的 cleanup 函数调用 `disconnect()` 关闭 WebSocket
+- 返回 Dashboard 时重新连接，触发短暂断开提示
+
+**影响范围**:
+- 用户离开仪表盘页面时 WebSocket 断开
+- 无法在其他页面接收实时告警通知
+- 频繁的断开/重连提示干扰用户
+
+**修复方案**:
+将 `useWebSocket` 移到 `AlertNotificationProvider` 组件，使 WebSocket 在整个应用生命周期内保持活跃。
+
+**修改文件**:
+- `web/src/components/common/AlertNotificationProvider.tsx`
+- `web/src/pages/dashboard/index.tsx`
+
+**状态**: ✅ 已修复 |

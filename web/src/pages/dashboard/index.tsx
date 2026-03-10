@@ -1,6 +1,5 @@
 import { useEffect, useState, useMemo } from 'react'
 import { Row, Col, Typography, message } from 'antd'
-import { useWebSocket } from '@/hooks'
 import { useDashboardStore } from '@/stores'
 import { dashboardApi, agentApi, alertApi } from '@/api'
 import StatCards from '@/components/dashboard/StatCards'
@@ -17,8 +16,7 @@ export default function DashboardPage() {
   const [loading, setLoading] = useState(true)
   const { stats, setStats, metrics } = useDashboardStore()
 
-  // Connect WebSocket
-  useWebSocket()
+  // Note: useWebSocket is now initialized in AlertNotificationProvider at app level
 
   // Merge real-time metrics with agents data
   const agentsWithMetrics = useMemo(() => {
