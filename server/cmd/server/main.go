@@ -36,6 +36,12 @@ var (
 	GitCommit = "unknown"
 )
 
+// DashboardWSStarter interface for starting dashboard websocket
+type DashboardWSStarter interface {
+	Start(ctx context.Context)
+	Stop()
+}
+
 // Application holds all dependencies
 type Application struct {
 	config     *config.Config
@@ -155,7 +161,12 @@ func main() {
 	}
 
 	// Setup Gin router
-	router := app.setupRouter()
+	router, dashboardWSHandler := app.setupRouter()
+
+	// Start dashboard WebSocket handler
+	ctx, cancel := context.WithCancel(context.Background())
+	defer cancel()
+	dashboardWSHandler.Start(ctx)
 
 	// Start HTTP server
 	srv := &http.Server{
@@ -182,13 +193,19 @@ func main() {
 
 	log.Infow("Shutting down server...")
 
-	// Graceful shutdown with timeout
-	ctx, cancel := context.WithTimeout(context.Background(), 30*time.Second)
-	defer cancel()
+	// Stop dashboard WebSocket handler
+	dashboardWSHandler.Stop()
 
-	if err := srv.Shutdown(ctx); err != nil {
+	// Graceful shutdown with timeout
+	shutdownCtx, shutdownCancel := context.WithTimeout(context.Background(), 30*time.Second)
+	defer shutdownCancel()
+
+	if err := srv.Shutdown(shutdownCtx); err != nil {
 		log.Errorw("Server forced to shutdown", "error", err)
 	}
+
+	// Cancel the context for dashboard handler
+	cancel()
 
 	// Close connections
 	if rabbitMQ != nil {
@@ -204,7 +221,7 @@ func main() {
 	log.Infow("Server exited")
 }
 
-func (app *Application) setupRouter() *gin.Engine {
+func (app *Application) setupRouter() (*gin.Engine, DashboardWSStarter) {
 	// Set Gin mode
 	if app.config.Log.Level == "debug" {
 		gin.SetMode(gin.DebugMode)
@@ -305,5 +322,10 @@ func (app *Application) setupRouter() *gin.Engine {
 		}
 	}
 
-	return router
+	// Set dashboard stats provider with adapter
+	dashboardWSHandler.SetStatsProvider(monitorHandler.StatsProviderFunc(func(ctx context.Context) (interface{}, error) {
+		return monitorSvc.GetDashboardStats(ctx)
+	}))
+
+	return router, dashboardWSHandler
 }

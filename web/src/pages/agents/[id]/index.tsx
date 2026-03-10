@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react'
+import { useEffect, useState, useMemo } from 'react'
 import { useParams, useNavigate } from 'react-router-dom'
 import { Card, Row, Col, Typography, Tag, Descriptions, Button, Progress, Space, Empty, Spin } from 'antd'
 import { ArrowLeftOutlined, ReloadOutlined, PlayCircleOutlined } from '@ant-design/icons'
@@ -59,6 +59,37 @@ export default function AgentDetailPage() {
     fetchMetrics()
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [id, timeRange])
+
+  // Prepare chart data from metrics (must be before any conditional returns)
+  const historyChartOption = useMemo(() => {
+    const chartData = metrics.slice().reverse()
+    const xAxisData = chartData.map((m) => {
+      const date = new Date(m.collected_at)
+      return date.toLocaleTimeString('zh-CN', { hour: '2-digit', minute: '2-digit' })
+    })
+    const cpuData = chartData.map((m) => m.cpu_usage)
+    const memoryData = chartData.map((m) => m.memory_percent)
+    const diskData = chartData.map((m) => m.disk_percent)
+
+    return {
+      tooltip: { trigger: 'axis' },
+      legend: { data: ['CPU', '内存', '磁盘'], bottom: 0 },
+      grid: {
+        left: '3%',
+        right: '4%',
+        bottom: '15%',
+        top: '10%',
+        containLabel: true,
+      },
+      xAxis: { type: 'category', data: xAxisData },
+      yAxis: { type: 'value', max: 100 },
+      series: [
+        { name: 'CPU', type: 'line', smooth: true, data: cpuData },
+        { name: '内存', type: 'line', smooth: true, data: memoryData },
+        { name: '磁盘', type: 'line', smooth: true, data: diskData },
+      ],
+    }
+  }, [metrics])
 
   if (loading) {
     return (
@@ -133,28 +164,6 @@ export default function AgentDetailPage() {
         detail: { valueAnimation: true, fontSize: 24, offsetCenter: [0, '0%'] },
         data: [{ value: agent.memory_usage || 0, name: '内存' }],
       },
-    ],
-  }
-
-  // Prepare chart data from metrics
-  const chartData = metrics.slice().reverse()
-  const xAxisData = chartData.map((m) => {
-    const date = new Date(m.collected_at)
-    return date.toLocaleTimeString('zh-CN', { hour: '2-digit', minute: '2-digit' })
-  })
-  const cpuData = chartData.map((m) => m.cpu_usage)
-  const memoryData = chartData.map((m) => m.memory_percent)
-  const diskData = chartData.map((m) => m.disk_percent)
-
-  const historyChartOption = {
-    tooltip: { trigger: 'axis' },
-    legend: { data: ['CPU', '内存', '磁盘'], bottom: 0 },
-    xAxis: { type: 'category', data: xAxisData },
-    yAxis: { type: 'value', max: 100 },
-    series: [
-      { name: 'CPU', type: 'line', smooth: true, data: cpuData },
-      { name: '内存', type: 'line', smooth: true, data: memoryData },
-      { name: '磁盘', type: 'line', smooth: true, data: diskData },
     ],
   }
 
@@ -261,6 +270,7 @@ export default function AgentDetailPage() {
             <ReactECharts
               option={historyChartOption}
               style={{ height: 300 }}
+              opts={{ renderer: 'svg' }}
             />
           </Card>
         </Col>

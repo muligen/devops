@@ -70,6 +70,14 @@ type StatsProvider interface {
 	GetDashboardStats(ctx context.Context) (interface{}, error)
 }
 
+// StatsProviderFunc is an adapter to allow using functions as StatsProvider.
+type StatsProviderFunc func(ctx context.Context) (interface{}, error)
+
+// GetDashboardStats implements StatsProvider.
+func (f StatsProviderFunc) GetDashboardStats(ctx context.Context) (interface{}, error) {
+	return f(ctx)
+}
+
 // AlertProvider provides alert information.
 type AlertProvider interface {
 	GetPendingCount(ctx context.Context) (int64, error)

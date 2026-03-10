@@ -6,6 +6,11 @@ AgentTeams - 企业级 Windows 机器管理系统
 - **Agent (C++)**: Windows 客户端
 - **Web (React)**: 管理后台前端
 
+## 核心原则
+1. 不要试图欺骗我
+2. 不要用mock数据通过测试
+
+
 ## 规范文档
 
 - [编码规范](docs/coding-standards.md) - **必须遵循**

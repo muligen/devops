@@ -2,6 +2,7 @@
 package handler
 
 import (
+	"fmt"
 	"net/http"
 	"strconv"
 	"time"
@@ -518,20 +519,59 @@ func toAlertRuleResponse(rule *domain.AlertRule) AlertRuleResponse {
 }
 
 // parseTimeRange parses start and end time from query parameters.
+// Supports both:
+//   - range parameter: "1h", "24h", "7d", "30d" (relative time from now)
+//   - start/end parameters: RFC3339 formatted timestamps
+// Returns times in UTC for consistent database queries.
 func parseTimeRange(c *gin.Context) (start, end time.Time) {
-	end = time.Now()
+	end = time.Now().UTC() // Use UTC for consistent database queries
 	start = end.Add(-1 * time.Hour) // Default: last hour
 
+	// Check for range parameter first (e.g., "1h", "24h", "7d")
+	if r := c.Query("range"); r != "" {
+		if duration, err := parseDuration(r); err == nil {
+			start = end.Add(-duration)
+			return start, end
+		}
+	}
+
+	// Fall back to start/end parameters
 	if s := c.Query("start"); s != "" {
 		if t, err := time.Parse(time.RFC3339, s); err == nil {
-			start = t
+			start = t.UTC()
 		}
 	}
 	if e := c.Query("end"); e != "" {
 		if t, err := time.Parse(time.RFC3339, e); err == nil {
-			end = t
+			end = t.UTC()
 		}
 	}
 
 	return start, end
+}
+
+// parseDuration parses a duration string like "1h", "24h", "7d".
+func parseDuration(s string) (time.Duration, error) {
+	if len(s) < 2 {
+		return 0, fmt.Errorf("invalid duration format: %s", s)
+	}
+
+	unit := s[len(s)-1]
+	valueStr := s[:len(s)-1]
+
+	value, err := strconv.Atoi(valueStr)
+	if err != nil {
+		return 0, fmt.Errorf("invalid duration value: %s", valueStr)
+	}
+
+	switch unit {
+	case 'h':
+		return time.Duration(value) * time.Hour, nil
+	case 'd':
+		return time.Duration(value) * 24 * time.Hour, nil
+	case 'w':
+		return time.Duration(value) * 7 * 24 * time.Hour, nil
+	default:
+		return 0, fmt.Errorf("unknown duration unit: %c", unit)
+	}
 }

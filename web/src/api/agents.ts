@@ -27,8 +27,16 @@ export const agentApi = {
   },
 
   async getMetrics(id: string, range: string = '1h'): Promise<unknown> {
+    // Adjust limit based on time range for better chart display
+    const limitMap: Record<string, number> = {
+      '1h': 120,   // ~2 data points per minute
+      '24h': 500,  // ~1 data point per 3 minutes
+      '7d': 1000,  // ~1 data point per 10 minutes
+    }
+    const limit = limitMap[range] || 100
+
     const response = await apiClient.get(`/agents/${id}/metrics`, {
-      params: { range },
+      params: { range, limit },
     })
     return response.data.data
   },

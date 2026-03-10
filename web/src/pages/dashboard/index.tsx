@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react'
+import { useEffect, useState, useMemo } from 'react'
 import { Row, Col, Typography, message } from 'antd'
 import { useWebSocket } from '@/hooks'
 import { useDashboardStore } from '@/stores'
@@ -15,10 +15,30 @@ export default function DashboardPage() {
   const [agents, setAgents] = useState<Agent[]>([])
   const [alerts, setAlerts] = useState<AlertEvent[]>([])
   const [loading, setLoading] = useState(true)
-  const { stats, setStats } = useDashboardStore()
+  const { stats, setStats, metrics } = useDashboardStore()
 
   // Connect WebSocket
   useWebSocket()
+
+  // Merge real-time metrics with agents data
+  const agentsWithMetrics = useMemo(() => {
+    if (!metrics || Object.keys(metrics).length === 0) {
+      return agents
+    }
+
+    return agents.map((agent) => {
+      const agentMetrics = metrics[agent.id]
+      if (agentMetrics) {
+        return {
+          ...agent,
+          cpu_usage: agentMetrics.cpu_usage ?? agent.cpu_usage,
+          memory_usage: agentMetrics.memory_usage ?? agent.memory_usage,
+          disk_usage: agentMetrics.disk_usage ?? agent.disk_usage,
+        }
+      }
+      return agent
+    })
+  }, [agents, metrics])
 
   useEffect(() => {
     const fetchData = async () => {
@@ -61,7 +81,7 @@ export default function DashboardPage() {
         </Col>
       </Row>
 
-      <AgentStatusGrid agents={agents} loading={loading} />
+      <AgentStatusGrid agents={agentsWithMetrics} loading={loading} />
     </div>
   )
 }
