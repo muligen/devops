@@ -5,13 +5,16 @@ run:
   timeout: 5m
   issues-exit-code: 1
   tests: true
-  skip-dirs:
-    - vendor
-    - third_party
   modules-download-mode: readonly
 
+issues:
+  exclude-dirs:
+    - vendor
+    - third_party
+
 output:
-  format: colored-line-number
+  formats:
+    - format: colored-line-number
   print-issued-lines: true
   print-linter-name: true
 
@@ -29,7 +32,7 @@ linters:
     - bodyclose
     - dogsled
     - dupl
-    - exportloopref
+    - copyloopvar
     - exhaustive
     - gochecknoinits
     - goconst
@@ -54,7 +57,6 @@ linters-settings:
     check-blank: false
 
   govet:
-    check-shadowing: false
     enable-all: true
     disable:
       - fieldalignment

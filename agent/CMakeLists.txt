@@ -16,7 +16,7 @@ set(CMAKE_ARCHIVE_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/lib)
 
 # Compiler warnings
 if(MSVC)
-    add_compile_options(/W4 /WX- /utf-8)
+    add_compile_options(/W4 /WX- /utf-8 /bigobj)
     add_compile_definitions(_CRT_SECURE_NO_WARNINGS)
 else()
     add_compile_options(-Wall -Wextra -Wpedantic)
