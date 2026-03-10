@@ -65,14 +65,29 @@ export default function AgentDetailPage() {
     const chartData = metrics.slice().reverse()
     const xAxisData = chartData.map((m) => {
       const date = new Date(m.collected_at)
-      return date.toLocaleTimeString('zh-CN', { hour: '2-digit', minute: '2-digit' })
+      // Format based on time range: show date for 24h and 7d, only time for 1h
+      if (timeRange === '1h') {
+        return date.toLocaleTimeString('zh-CN', { hour: '2-digit', minute: '2-digit' })
+      } else {
+        return date.toLocaleDateString('zh-CN', { month: '2-digit', day: '2-digit' }) + ' ' +
+               date.toLocaleTimeString('zh-CN', { hour: '2-digit', minute: '2-digit' })
+      }
     })
     const cpuData = chartData.map((m) => m.cpu_usage)
     const memoryData = chartData.map((m) => m.memory_percent)
     const diskData = chartData.map((m) => m.disk_percent)
 
     return {
-      tooltip: { trigger: 'axis' },
+      tooltip: {
+        trigger: 'axis',
+        formatter: (params: Array<{ seriesName: string; value: number; axisValue: string }>) => {
+          let result = params[0]?.axisValue + '<br/>'
+          params.forEach(item => {
+            result += `${item.seriesName}: ${item.value?.toFixed(1)}%<br/>`
+          })
+          return result
+        }
+      },
       legend: { data: ['CPU', '内存', '磁盘'], bottom: 0 },
       grid: {
         left: '3%',
@@ -81,7 +96,14 @@ export default function AgentDetailPage() {
         top: '10%',
         containLabel: true,
       },
-      xAxis: { type: 'category', data: xAxisData },
+      xAxis: {
+        type: 'category',
+        data: xAxisData,
+        axisLabel: {
+          rotate: timeRange === '1h' ? 0 : 45,
+          interval: timeRange === '1h' ? 'auto' : Math.floor(xAxisData.length / 8),
+        }
+      },
       yAxis: { type: 'value', max: 100 },
       series: [
         { name: 'CPU', type: 'line', smooth: true, data: cpuData },
@@ -89,7 +111,7 @@ export default function AgentDetailPage() {
         { name: '磁盘', type: 'line', smooth: true, data: diskData },
       ],
     }
-  }, [metrics])
+  }, [metrics, timeRange])
 
   if (loading) {
     return (

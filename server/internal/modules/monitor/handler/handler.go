@@ -77,7 +77,7 @@ func (h *Handler) GetAgentMetrics(c *gin.Context) {
 			DiskUsed:      m.DiskUsed,
 			DiskPercent:   m.DiskPercent,
 			Uptime:        m.Uptime,
-			CollectedAt:   m.CollectedAt.Format("2006-01-02T15:04:05Z"),
+			CollectedAt:   m.CollectedAt.UTC().Format(time.RFC3339),
 		}
 	}
 
