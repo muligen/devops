@@ -9,6 +9,16 @@ add_executable(agent
     updater.cpp
 )
 
+# Add command executor sources
+target_sources(agent PRIVATE
+    ../task/command_executor.cpp
+    ../task/command_queue.cpp
+    ../task/thread_pool.cpp
+    ../task/commands/exec_shell.cpp
+    ../task/commands/init_machine.cpp
+    ../task/commands/clean_disk.cpp
+)
+
 target_link_libraries(agent PRIVATE
     agent_common
     nlohmann_json::nlohmann_json
@@ -21,6 +31,10 @@ if(WIN32)
     target_link_libraries(agent PRIVATE
         advapi32.lib
         user32.lib
+        shell32.lib
+        ole32.lib
+        pdh.lib
+        psapi.lib
     )
 endif()
 

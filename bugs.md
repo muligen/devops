@@ -81,7 +81,19 @@ g_context->ws_client->SetMessageCallback(
 - 将命令放入任务队列
 - 执行命令并返回结果
 
-**状态**: ⏸️ 暂不处理
+**状态**: ✅ 已修复
+
+**修复说明**:
+1. 在 `service.cpp` 中添加了命令队列和 worker 线程
+2. 实现了 WebSocket 消息回调中的命令解析和处理
+3. 添加了 `SendCommandResult()` 函数将执行结果发送回 Server
+4. 集成现有的命令执行器 (exec_shell, clean_disk, init_machine)
+5. 修改 CMakeLists.txt 将命令执行器代码编译到 main agent 中
+6. 添加命令执行器的 factory 函数前向声明
+
+**修改文件**:
+- `agent/src/main/service.cpp`
+- `agent/src/main/CMakeLists.txt`
 
 ---
 
@@ -218,7 +230,7 @@ g_context->ws_client->SetMessageCallback(
 |------|--------|----------|------|
 | 2026-03-10 | #1 | Server Dashboard WebSocket 启动 | ✅ 已修复 |
 | 2026-03-10 | #2 | 前端 Agent 实时状态更新 | ✅ 已修复 |
-| 2026-03-10 | #3 | Agent 命令处理未实现 | ⏸️ 暂不处理 |
+| 2026-03-11 | #3 | Agent 命令处理未实现 | ✅ 已修复 |
 | 2026-03-10 | #4 | 前端历史指标图表时间范围切换无效 | ✅ 已修复 |
 | 2026-03-10 | #5 | React Hooks 规则违反导致图表不显示 | ✅ 已修复 |
 | 2026-03-10 | #6 | 后端时区问题导致时间范围查询不准确 | ✅ 已修复 |

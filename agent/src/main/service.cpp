@@ -4,7 +4,8 @@
 #include <agent/process_manager.hpp>
 #include <agent/websocket_client.hpp>
 #include <agent/common/types.hpp>
-#include <agent/heartbeat_worker.hpp>
+#include <agent/command.hpp>
+#include <agent/command_queue.hpp>
 #include <nlohmann/json.hpp>
 
 #ifdef _WIN32
@@ -25,6 +26,11 @@
 #include <iomanip>
 
 namespace agent {
+
+// Forward declarations for command executor factories
+std::unique_ptr<CommandExecutor> CreateExecShellExecutor();
+std::unique_ptr<CommandExecutor> CreateCleanDiskExecutor();
+std::unique_ptr<CommandExecutor> CreateInitMachineExecutor();
 
 #ifdef _WIN32
 
@@ -48,9 +54,79 @@ struct ServiceContext {
     std::unique_ptr<ProcessManager> process_manager;
     std::unique_ptr<WebSocketClient> ws_client;
     std::atomic<bool> ws_connected{false};
+
+    // Command execution
+    std::unique_ptr<CommandQueue> command_queue;
+    std::thread command_worker_thread;
+    std::atomic<bool> command_worker_running{false};
 };
 
 std::unique_ptr<ServiceContext> g_context;
+
+// Command executor registry
+std::vector<std::unique_ptr<CommandExecutor>> GetCommandExecutors() {
+    std::vector<std::unique_ptr<CommandExecutor>> executors;
+    executors.push_back(CreateExecShellExecutor());
+    executors.push_back(CreateCleanDiskExecutor());
+    executors.push_back(CreateInitMachineExecutor());
+    return executors;
+}
+
+// Find executor for command type
+CommandExecutor* FindExecutor(std::vector<std::unique_ptr<CommandExecutor>>& executors,
+                               CommandType type) {
+    for (auto& executor : executors) {
+        if (executor->CanHandle(type)) {
+            return executor.get();
+        }
+    }
+    return nullptr;
+}
+
+// Parse command from WebSocket message (Server format)
+std::optional<Command> ParseServerCommand(const nlohmann::json& msg) {
+    try {
+        // Server sends: {"command_id": "...", "command_type": "...", "params": {...}, "timeout": ...}
+        Command cmd;
+
+        // Handle both command_id and id field names
+        cmd.id = msg.value("command_id", msg.value("id", ""));
+
+        if (cmd.id.empty()) {
+            LOG_WARN("Command message missing id/command_id field");
+            return std::nullopt;
+        }
+
+        // Parse command type
+        std::string type_str = msg.value("command_type", msg.value("type", ""));
+        auto type_opt = StringToCommandType(type_str);
+        if (!type_opt) {
+            LOG_WARN("Unknown command type: {}", type_str);
+            return std::nullopt;
+        }
+        cmd.type = *type_opt;
+
+        // Parse params
+        if (msg.contains("params") && msg["params"].is_object()) {
+            for (auto& [key, value] : msg["params"].items()) {
+                if (value.is_string()) {
+                    cmd.params[key] = value.get<std::string>();
+                } else {
+                    cmd.params[key] = value.dump();
+                }
+            }
+        }
+
+        // Parse timeout (default 5 minutes)
+        int timeout_seconds = msg.value("timeout", 300);
+        cmd.timeout = std::chrono::seconds(timeout_seconds);
+
+        return cmd;
+    } catch (const std::exception& e) {
+        LOG_ERROR("Failed to parse command: {}", e.what());
+        return std::nullopt;
+    }
+}
 
 // Helper functions for system metrics
 #ifdef _WIN32
@@ -169,6 +245,63 @@ void SendMetrics() {
               GetCpuUsage(), GetMemoryPercent(), GetDiskPercent());
 }
 
+// Send command result to server
+void SendCommandResult(const CommandResult& result) {
+    if (!g_context || !g_context->ws_client || !g_context->ws_connected) {
+        LOG_WARN("Cannot send command result: WebSocket not connected");
+        return;
+    }
+
+    nlohmann::json msg;
+    msg["type"] = "result";
+    msg["command_id"] = result.id;
+    msg["status"] = TaskStatusToString(result.status);
+    msg["exit_code"] = result.exit_code;
+    msg["output"] = result.output;
+    msg["duration"] = result.duration_seconds;
+
+    g_context->ws_client->Send(msg.dump());
+    LOG_INFO("Sent command result: id={}, status={}, exit_code={}",
+             result.id, TaskStatusToString(result.status), result.exit_code);
+}
+
+// Command worker thread function
+void CommandWorkerThread(std::vector<std::unique_ptr<CommandExecutor>> executors) {
+    LOG_INFO("Command worker thread started");
+
+    while (g_context->command_worker_running) {
+        auto cmd_opt = g_context->command_queue->Pop();
+        if (!cmd_opt) {
+            std::this_thread::sleep_for(std::chrono::milliseconds(100));
+            continue;
+        }
+
+        const auto& cmd = *cmd_opt;
+        LOG_INFO("Executing command: id={}, type={}", cmd.id, CommandTypeToString(cmd.type));
+
+        // Find executor for this command type
+        auto* executor = FindExecutor(executors, cmd.type);
+        if (!executor) {
+            LOG_ERROR("No executor found for command type: {}", CommandTypeToString(cmd.type));
+
+            // Send failure result
+            CommandResult result;
+            result.id = cmd.id;
+            result.status = TaskStatus::kFailed;
+            result.output = "No executor found for command type: " + CommandTypeToString(cmd.type);
+            result.exit_code = -1;
+            SendCommandResult(result);
+            continue;
+        }
+
+        // Execute command
+        auto result = executor->Execute(cmd);
+        SendCommandResult(result);
+    }
+
+    LOG_INFO("Command worker thread stopped");
+}
+
 void ServiceRun(const Config& config) {
     LOG_INFO("Agent starting...");
 
@@ -182,6 +315,12 @@ void ServiceRun(const Config& config) {
     g_context = std::make_unique<ServiceContext>();
     g_context->config = config;
     g_context->process_manager = std::make_unique<ProcessManager>(pm_config);
+
+    // Initialize command queue
+    g_context->command_queue = std::make_unique<CommandQueue>(kDefaultCommandQueueSize);
+
+    // Command executors
+    auto executors = GetCommandExecutors();
 
     // Set up state callback
     g_context->process_manager->SetStateCallback(
@@ -234,9 +373,41 @@ void ServiceRun(const Config& config) {
         });
 
     g_context->ws_client->SetMessageCallback(
-        [](const std::string& message) {
-            LOG_DEBUG("WebSocket message received: {}", message.substr(0, 100));
-            // TODO: Handle incoming messages (commands from server)
+        [&executors](const std::string& message) {
+            LOG_DEBUG("WebSocket message received: {}", message.substr(0, 200));
+
+            try {
+                auto msg = nlohmann::json::parse(message);
+
+                // Check if this is a command message
+                std::string msg_type = msg.value("type", "");
+                bool is_command = msg.contains("command_type") || msg.contains("command_id");
+
+                if (is_command || msg_type == "command") {
+                    LOG_INFO("Received command from server");
+                    auto cmd_opt = ParseServerCommand(msg);
+                    if (cmd_opt) {
+                        // Push to command queue
+                        if (!g_context->command_queue->Push(*cmd_opt)) {
+                            LOG_ERROR("Command queue full, dropping command: {}", cmd_opt->id);
+
+                            // Send queue full error
+                            CommandResult result;
+                            result.id = cmd_opt->id;
+                            result.status = TaskStatus::kFailed;
+                            result.output = "Command queue full";
+                            result.exit_code = -1;
+                            SendCommandResult(result);
+                        } else {
+                            LOG_INFO("Command queued: {}", cmd_opt->id);
+                        }
+                    }
+                }
+            } catch (const nlohmann::json::parse_error& e) {
+                LOG_ERROR("Failed to parse WebSocket message: {}", e.what());
+            } catch (const std::exception& e) {
+                LOG_ERROR("Error processing WebSocket message: {}", e.what());
+            }
         });
 
     g_context->ws_client->SetAuthCallback(
@@ -254,6 +425,10 @@ void ServiceRun(const Config& config) {
 
     // Start workers
     g_context->process_manager->StartAll();
+
+    // Start command worker thread
+    g_context->command_worker_running = true;
+    g_context->command_worker_thread = std::thread(CommandWorkerThread, std::move(executors));
 
     g_running = true;
     ServiceReportStatus(SERVICE_RUNNING, NO_ERROR, 0);
@@ -289,6 +464,13 @@ void ServiceRun(const Config& config) {
 
     // Shutdown
     LOG_INFO("Agent shutting down...");
+
+    // Stop command worker thread
+    g_context->command_worker_running = false;
+    if (g_context->command_worker_thread.joinable()) {
+        g_context->command_worker_thread.join();
+    }
+
     if (g_context->ws_client) {
         g_context->ws_client->Disconnect();
     }
