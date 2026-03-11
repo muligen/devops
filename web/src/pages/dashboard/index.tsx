@@ -7,6 +7,7 @@ import AgentStatusGrid from '@/components/dashboard/AgentStatusGrid'
 import TaskTrendChart from '@/components/dashboard/TaskTrendChart'
 import RecentAlerts from '@/components/dashboard/RecentAlerts'
 import type { Agent, AlertEvent } from '@/types'
+import styles from './index.module.css'
 
 const { Title } = Typography
 
@@ -63,14 +64,16 @@ export default function DashboardPage() {
   }, [setStats])
 
   return (
-    <div>
-      <Title level={4} style={{ marginBottom: 24 }}>
+    <div className={styles.container}>
+      <Title level={4} className={styles.title}>
         仪表盘
       </Title>
 
-      <StatCards stats={stats} />
+      <div className={styles.cardsSection}>
+        <StatCards stats={stats} />
+      </div>
 
-      <Row gutter={[16, 16]} style={{ marginTop: 16 }}>
+      <Row gutter={[16, 16]} className={styles.chartsSection}>
         <Col xs={24} lg={16}>
           <TaskTrendChart data={stats?.task_trend} loading={loading} />
         </Col>
@@ -79,7 +82,9 @@ export default function DashboardPage() {
         </Col>
       </Row>
 
-      <AgentStatusGrid agents={agentsWithMetrics} loading={loading} />
+      <div className={styles.agentsSection}>
+        <AgentStatusGrid agents={agentsWithMetrics} loading={loading} />
+      </div>
     </div>
   )
 }

@@ -6,13 +6,10 @@ import { useNavigate } from 'react-router-dom'
 import { agentApi } from '@/api'
 import { formatRelativeTime, formatPercent } from '@/utils'
 import type { Agent, AgentListParams } from '@/types'
+import styles from './index.module.css'
 
 const { Title } = Typography
 const { Search } = Input
-
-// 提取样式常量
-const PAGE_HEADER_STYLE = { marginBottom: 16, display: 'flex', justifyContent: 'space-between', alignItems: 'center' } as const
-const FILTER_SPACE_STYLE = { marginBottom: 16 } as const
 
 export default function AgentsPage() {
   const navigate = useNavigate()
@@ -91,7 +88,7 @@ export default function AgentsPage() {
             size="small"
             showInfo={false}
             strokeColor={
-              (value || 0) > 80 ? '#ff4d4f' : (value || 0) > 60 ? '#faad14' : '#52c41a'
+              (value || 0) > 80 ? '#ff7875' : (value || 0) > 60 ? '#ffc53d' : '#73d13d'
             }
           />
         </Tooltip>
@@ -110,7 +107,7 @@ export default function AgentsPage() {
             size="small"
             showInfo={false}
             strokeColor={
-              (value || 0) > 80 ? '#ff4d4f' : (value || 0) > 60 ? '#faad14' : '#52c41a'
+              (value || 0) > 80 ? '#ff7875' : (value || 0) > 60 ? '#ffc53d' : '#73d13d'
             }
           />
         </Tooltip>
@@ -129,7 +126,7 @@ export default function AgentsPage() {
             size="small"
             showInfo={false}
             strokeColor={
-              (value || 0) > 80 ? '#ff4d4f' : (value || 0) > 60 ? '#faad14' : '#52c41a'
+              (value || 0) > 80 ? '#ff7875' : (value || 0) > 60 ? '#ffc53d' : '#73d13d'
             }
           />
         </Tooltip>
@@ -166,16 +163,20 @@ export default function AgentsPage() {
   }
 
   return (
-    <div>
-      <div style={PAGE_HEADER_STYLE}>
+    <div className={styles.container}>
+      <div className={styles.header}>
         <Title level={4} style={{ margin: 0 }}>Agent 管理</Title>
-        <Button icon={<ReloadOutlined />} onClick={fetchAgents}>
+        <Button
+          icon={<ReloadOutlined />}
+          onClick={fetchAgents}
+          className={styles.refreshButton}
+        >
           刷新
         </Button>
       </div>
 
-      <Card>
-        <Space style={FILTER_SPACE_STYLE}>
+      <Card className={styles.card}>
+        <Space style={{ marginBottom: 16 }}>
           <Search
             placeholder="搜索 Agent 名称/主机名"
             allowClear
@@ -195,6 +196,7 @@ export default function AgentsPage() {
         </Space>
 
         <Table
+          className={styles.table}
           columns={columns}
           dataSource={agents}
           rowKey="id"

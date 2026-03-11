@@ -1,5 +1,33 @@
 .statCard {
   height: 100%;
+  background: linear-gradient(180deg, rgba(26, 26, 36, 0.8) 0%, rgba(18, 18, 24, 0.9) 100%) !important;
+  border: 1px solid rgba(255, 255, 255, 0.06) !important;
+  border-radius: 12px !important;
+  position: relative;
+  overflow: hidden;
+  transition: all 0.3s ease !important;
+}
+
+.statCard::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 2px;
+  background: var(--gradient-primary);
+  opacity: 0;
+  transition: opacity 0.3s ease;
+}
+
+.statCard:hover {
+  transform: translateY(-4px);
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.3);
+  border-color: rgba(255, 255, 255, 0.1) !important;
+}
+
+.statCard:hover::before {
+  opacity: 1;
 }
 
 .statContent {
@@ -9,13 +37,25 @@
 }
 
 .statIcon {
-  width: 48px;
-  height: 48px;
-  border-radius: 8px;
+  width: 52px;
+  height: 52px;
+  border-radius: 12px;
   display: flex;
   align-items: center;
   justify-content: center;
   flex-shrink: 0;
+  position: relative;
+  overflow: hidden;
+}
+
+.statIcon::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: linear-gradient(180deg, rgba(255, 255, 255, 0.1) 0%, transparent 100%);
 }
 
 .statInfo {
@@ -24,25 +64,71 @@
 }
 
 .statTitle {
-  font-size: 14px;
+  font-size: 13px;
   display: block;
   margin-bottom: 4px;
+  letter-spacing: 0.3px;
 }
 
 .statValue {
   margin: 0 !important;
-  font-size: 28px !important;
+  font-size: 32px !important;
   font-weight: 600 !important;
+  letter-spacing: -1px;
+  line-height: 1.2 !important;
 }
 
 .statTotal {
-  font-size: 16px;
+  font-size: 18px;
   font-weight: 400;
-  color: #8c8c8c;
+  opacity: 0.6;
+  margin-left: 4px;
 }
 
 .statSuffix {
   font-size: 12px;
   display: block;
-  margin-top: 4px;
+  margin-top: 6px;
+  letter-spacing: 0.2px;
+}
+
+/* Color variants */
+.iconSuccess {
+  background: rgba(82, 196, 26, 0.15);
+  color: #73d13d;
+  box-shadow: 0 4px 16px rgba(82, 196, 26, 0.2);
+}
+
+.iconError {
+  background: rgba(255, 77, 79, 0.15);
+  color: #ff7875;
+  box-shadow: 0 4px 16px rgba(255, 77, 79, 0.2);
+}
+
+.iconPrimary {
+  background: rgba(22, 119, 255, 0.15);
+  color: #4096ff;
+  box-shadow: 0 4px 16px rgba(22, 119, 255, 0.2);
+}
+
+.iconWarning {
+  background: rgba(250, 173, 20, 0.15);
+  color: #ffc53d;
+  box-shadow: 0 4px 16px rgba(250, 173, 20, 0.2);
+}
+
+.valueSuccess {
+  color: #73d13d !important;
+}
+
+.valueError {
+  color: #ff7875 !important;
+}
+
+.valuePrimary {
+  color: #4096ff !important;
+}
+
+.valueWarning {
+  color: #ffc53d !important;
 }

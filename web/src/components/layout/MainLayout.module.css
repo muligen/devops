@@ -1,9 +1,25 @@
 .layout {
   min-height: 100vh;
+  background: var(--surface-0);
 }
 
 .sider {
-  background: #001529;
+  background: var(--surface-0) !important;
+  border-right: 1px solid var(--glass-border);
+  box-shadow: 4px 0 24px rgba(0, 0, 0, 0.3);
+  position: relative;
+  overflow: hidden;
+}
+
+.sider::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: linear-gradient(180deg, rgba(22, 119, 255, 0.03) 0%, transparent 50%);
+  pointer-events: none;
 }
 
 .logo {
@@ -11,48 +27,149 @@
   display: flex;
   align-items: center;
   justify-content: center;
-  border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+  gap: 10px;
+  border-bottom: 1px solid var(--glass-border);
+  position: relative;
+  background: linear-gradient(180deg, rgba(22, 119, 255, 0.08) 0%, transparent 100%);
+}
+
+.logo::after {
+  content: '';
+  position: absolute;
+  bottom: 0;
+  left: 20px;
+  right: 20px;
+  height: 1px;
+  background: linear-gradient(90deg, transparent, var(--primary-400), transparent);
+  opacity: 0.3;
+}
+
+.logoIcon {
+  width: 32px;
+  height: 32px;
+  background: linear-gradient(135deg, #1677ff 0%, #722ed1 100%);
+  border-radius: 8px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  box-shadow: 0 4px 12px rgba(22, 119, 255, 0.3);
+}
+
+.logoText {
+  font-size: 18px !important;
+  font-weight: 600 !important;
+  background: linear-gradient(135deg, #ffffff 0%, rgba(255, 255, 255, 0.85) 100%);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+  letter-spacing: -0.5px;
 }
 
 .header {
-  background: #fff;
+  background: var(--surface-1) !important;
   padding: 0 24px;
   display: flex;
   align-items: center;
   justify-content: flex-end;
-  box-shadow: 0 1px 4px rgba(0, 0, 0, 0.08);
+  border-bottom: 1px solid var(--glass-border);
   height: 64px;
+  position: relative;
+}
+
+.header::after {
+  content: '';
+  position: absolute;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  height: 1px;
+  background: linear-gradient(90deg, transparent, var(--primary-400), transparent);
+  opacity: 0.2;
 }
 
 .headerRight {
   display: flex;
   align-items: center;
-  gap: 24px;
+  gap: 20px;
 }
 
 .connectionStatus {
   display: flex;
   align-items: center;
   gap: 8px;
-  font-size: 14px;
+  font-size: 13px;
+  padding: 6px 12px;
+  background: rgba(255, 255, 255, 0.04);
+  border-radius: 20px;
+  border: 1px solid rgba(255, 255, 255, 0.06);
 }
 
 .userDropdown {
   cursor: pointer;
-  padding: 4px 8px;
-  border-radius: 4px;
-  transition: background-color 0.3s;
+  padding: 6px 12px;
+  border-radius: 8px;
+  transition: all 0.25s ease;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  background: rgba(255, 255, 255, 0.04);
+  border: 1px solid rgba(255, 255, 255, 0.06);
 }
 
 .userDropdown:hover {
-  background-color: #f5f5f5;
+  background: rgba(255, 255, 255, 0.08);
+  border-color: rgba(255, 255, 255, 0.1);
 }
 
 .content {
   margin: 24px;
   padding: 24px;
-  background: #fff;
-  border-radius: 8px;
+  background: var(--surface-1);
+  border-radius: 12px;
+  border: 1px solid var(--glass-border);
   min-height: calc(100vh - 112px);
   overflow: auto;
+  position: relative;
+}
+
+.content::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 1px;
+  background: linear-gradient(90deg, transparent, var(--primary-400), transparent);
+  opacity: 0.2;
+}
+
+/* Menu item animations */
+.sider :global(.ant-menu-item),
+.sider :global(.ant-menu-submenu-title) {
+  margin: 4px 8px !important;
+  border-radius: 8px !important;
+  transition: all 0.25s ease !important;
+}
+
+.sider :global(.ant-menu-item:hover),
+.sider :global(.ant-menu-submenu-title:hover) {
+  background: rgba(255, 255, 255, 0.06) !important;
+}
+
+.sider :global(.ant-menu-item-selected) {
+  background: linear-gradient(135deg, rgba(22, 119, 255, 0.15) 0%, rgba(114, 46, 209, 0.1) 100%) !important;
+  box-shadow: inset 3px 0 0 var(--primary-400);
+}
+
+.sider :global(.ant-menu-item-selected)::after {
+  content: '';
+  position: absolute;
+  right: 8px;
+  top: 50%;
+  transform: translateY(-50%);
+  width: 4px;
+  height: 4px;
+  background: var(--primary-400);
+  border-radius: 50%;
+  box-shadow: 0 0 8px var(--primary-400);
 }

@@ -1,8 +1,9 @@
 import { useState } from 'react'
-import { Form, Input, Button, Card, message, Typography, Space } from 'antd'
-import { UserOutlined, LockOutlined } from '@ant-design/icons'
+import { Form, Input, Button, message, Typography, Space } from 'antd'
+import { UserOutlined, LockOutlined, ApiOutlined } from '@ant-design/icons'
 import { useNavigate, useLocation } from 'react-router-dom'
 import { useAuthStore } from '@/stores/auth'
+import styles from './index.module.css'
 
 const { Title, Text } = Typography
 
@@ -33,67 +34,84 @@ export default function LoginPage() {
   }
 
   return (
-    <div
-      style={{
-        minHeight: '100vh',
-        display: 'flex',
-        justifyContent: 'center',
-        alignItems: 'center',
-        background: 'linear-gradient(135deg, #1890ff 0%, #722ed1 100%)',
-      }}
-    >
-      <Card style={{ width: 400, boxShadow: '0 4px 12px rgba(0,0,0,0.15)' }}>
-        <Space direction="vertical" size="large" style={{ width: '100%' }}>
-          <div style={{ textAlign: 'center' }}>
-            <Title level={2} style={{ marginBottom: 0 }}>
-              AgentTeams
-            </Title>
-            <Text type="secondary">企业级机器管理系统</Text>
-          </div>
+    <div className={styles.container}>
+      {/* Background effects */}
+      <div className={styles.backgroundGrid} />
+      <div className={styles.backgroundGlow} />
+      <div className={styles.backgroundGlow2} />
 
-          <Form
-            name="login"
-            onFinish={handleSubmit}
-            autoComplete="off"
-            layout="vertical"
-            size="large"
+      {/* Login card */}
+      <div className={styles.loginCard}>
+        <div className={styles.cardHeader}>
+          <div className={styles.logoWrapper}>
+            <div className={styles.logoIcon}>
+              <ApiOutlined />
+            </div>
+          </div>
+          <Title level={2} className={styles.title}>
+            AgentTeams
+          </Title>
+          <Text type="secondary" className={styles.subtitle}>
+            企业级机器管理系统
+          </Text>
+        </div>
+
+        <Form
+          name="login"
+          onFinish={handleSubmit}
+          autoComplete="off"
+          layout="vertical"
+          size="large"
+          className={styles.form}
+        >
+          <Form.Item
+            name="username"
+            rules={[{ required: true, message: '请输入用户名' }]}
           >
-            <Form.Item
-              name="username"
-              rules={[{ required: true, message: '请输入用户名' }]}
+            <Input
+              prefix={<UserOutlined style={{ color: 'rgba(255,255,255,0.45)' }} />}
+              placeholder="用户名"
+              autoComplete="username"
+              className={styles.input}
+            />
+          </Form.Item>
+
+          <Form.Item
+            name="password"
+            rules={[{ required: true, message: '请输入密码' }]}
+          >
+            <Input.Password
+              prefix={<LockOutlined style={{ color: 'rgba(255,255,255,0.45)' }} />}
+              placeholder="密码"
+              autoComplete="current-password"
+              className={styles.input}
+            />
+          </Form.Item>
+
+          <Form.Item style={{ marginBottom: 0, marginTop: 8 }}>
+            <Button
+              type="primary"
+              htmlType="submit"
+              loading={loading}
+              block
+              className={styles.submitButton}
             >
-              <Input
-                prefix={<UserOutlined />}
-                placeholder="用户名"
-                autoComplete="username"
-              />
-            </Form.Item>
+              登录
+            </Button>
+          </Form.Item>
+        </Form>
 
-            <Form.Item
-              name="password"
-              rules={[{ required: true, message: '请输入密码' }]}
-            >
-              <Input.Password
-                prefix={<LockOutlined />}
-                placeholder="密码"
-                autoComplete="current-password"
-              />
-            </Form.Item>
+        <div className={styles.footer}>
+          <Text type="secondary" className={styles.hint}>
+            默认账号: admin / admin123
+          </Text>
+        </div>
+      </div>
 
-            <Form.Item style={{ marginBottom: 0 }}>
-              <Button type="primary" htmlType="submit" loading={loading} block>
-                登录
-              </Button>
-            </Form.Item>
-          </Form>
-
-          <div style={{ textAlign: 'center' }}>
-            <Text type="secondary" style={{ fontSize: 12 }}>
-              默认账号: admin / admin123
-            </Text>
-          </div>
-        </Space>
-      </Card>
+      {/* Decorative elements */}
+      <div className={styles.floatingOrb1} />
+      <div className={styles.floatingOrb2} />
+      <div className={styles.floatingOrb3} />
     </div>
   )
 }

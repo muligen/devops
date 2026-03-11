@@ -1,0 +1,78 @@
+.card {
+  background: rgba(26, 26, 36, 0.6);
+  border: 1px solid rgba(255, 255, 255, 0.06);
+  border-radius: 12px;
+}
+
+.card :global(.ant-card-head) {
+  border-bottom: 1px solid rgba(255, 255, 255, 0.06) !important;
+  padding: 16px 20px !important;
+}
+
+.card :global(.ant-card-head-title) {
+  font-weight: 600 !important;
+  font-size: 15px !important;
+}
+
+.card :global(.ant-card-body) {
+  padding: 16px 20px !important;
+}
+
+/* Table customization */
+.table :global(.ant-table) {
+  background: transparent;
+}
+
+.table :global(.ant-table-thead > tr > th) {
+  background: rgba(18, 18, 24, 0.8) !important;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.06) !important;
+  color: rgba(255, 255, 255, 0.65) !important;
+  font-weight: 500;
+}
+
+.table :global(.ant-table-tbody > tr) {
+  transition: background 0.2s ease;
+}
+
+.table :global(.ant-table-tbody > tr:hover > td) {
+  background: rgba(255, 255, 255, 0.04) !important;
+}
+
+.table :global(.ant-table-tbody > tr > td) {
+  border-bottom: 1px solid rgba(255, 255, 255, 0.04) !important;
+  color: rgba(255, 255, 255, 0.88) !important;
+}
+
+/* Status badges */
+.statusBadge {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 4px 10px;
+  border-radius: 6px;
+  font-size: 12px;
+  font-weight: 500;
+}
+
+.statusBadge.pending {
+  background: rgba(250, 173, 20, 0.15);
+  color: #ffc53d;
+  border: 1px solid rgba(250, 173, 20, 0.2);
+}
+
+.statusBadge.acknowledged {
+  background: rgba(22, 119, 255, 0.15);
+  color: #4096ff;
+  border: 1px solid rgba(22, 119, 255, 0.2);
+}
+
+.statusBadge.resolved {
+  background: rgba(82, 196, 26, 0.15);
+  color: #73d13d;
+  border: 1px solid rgba(82, 196, 26, 0.2);
+}
+
+/* Empty state */
+.empty :global(.ant-empty-description) {
+  color: rgba(255, 255, 255, 0.45) !important;
+}

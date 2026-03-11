@@ -15,10 +15,18 @@ export default function TaskTrendChart({ data, loading }: TaskTrendChartProps) {
       axisPointer: {
         type: 'cross',
       },
+      backgroundColor: 'rgba(18, 18, 24, 0.9)',
+      borderColor: 'rgba(255, 255, 255, 0.1)',
+      textStyle: {
+        color: 'rgba(255, 255, 255, 0.88)',
+      },
     },
     legend: {
       data: ['成功', '失败'],
       bottom: 0,
+      textStyle: {
+        color: 'rgba(255, 255, 255, 0.65)',
+      },
     },
     grid: {
       left: '3%',
@@ -33,11 +41,16 @@ export default function TaskTrendChart({ data, loading }: TaskTrendChartProps) {
       data: data?.map((item) => item.time) || [],
       axisLine: {
         lineStyle: {
-          color: '#d9d9d9',
+          color: 'rgba(255, 255, 255, 0.1)',
         },
       },
       axisLabel: {
-        color: '#8c8c8c',
+        color: 'rgba(255, 255, 255, 0.45)',
+      },
+      axisTick: {
+        lineStyle: {
+          color: 'rgba(255, 255, 255, 0.1)',
+        },
       },
     },
     yAxis: {
@@ -50,11 +63,11 @@ export default function TaskTrendChart({ data, loading }: TaskTrendChartProps) {
         show: false,
       },
       axisLabel: {
-        color: '#8c8c8c',
+        color: 'rgba(255, 255, 255, 0.45)',
       },
       splitLine: {
         lineStyle: {
-          color: '#f0f0f0',
+          color: 'rgba(255, 255, 255, 0.04)',
         },
       },
     },
@@ -67,10 +80,12 @@ export default function TaskTrendChart({ data, loading }: TaskTrendChartProps) {
         symbolSize: 6,
         lineStyle: {
           width: 2,
-          color: '#52c41a',
+          color: '#73d13d',
         },
         itemStyle: {
-          color: '#52c41a',
+          color: '#73d13d',
+          borderColor: '#1a1a24',
+          borderWidth: 2,
         },
         areaStyle: {
           color: {
@@ -80,8 +95,8 @@ export default function TaskTrendChart({ data, loading }: TaskTrendChartProps) {
             x2: 0,
             y2: 1,
             colorStops: [
-              { offset: 0, color: 'rgba(82, 196, 26, 0.3)' },
-              { offset: 1, color: 'rgba(82, 196, 26, 0.05)' },
+              { offset: 0, color: 'rgba(115, 209, 61, 0.25)' },
+              { offset: 1, color: 'rgba(115, 209, 61, 0.02)' },
             ],
           },
         },
@@ -95,10 +110,12 @@ export default function TaskTrendChart({ data, loading }: TaskTrendChartProps) {
         symbolSize: 6,
         lineStyle: {
           width: 2,
-          color: '#ff4d4f',
+          color: '#ff7875',
         },
         itemStyle: {
-          color: '#ff4d4f',
+          color: '#ff7875',
+          borderColor: '#1a1a24',
+          borderWidth: 2,
         },
         areaStyle: {
           color: {
@@ -108,8 +125,8 @@ export default function TaskTrendChart({ data, loading }: TaskTrendChartProps) {
             x2: 0,
             y2: 1,
             colorStops: [
-              { offset: 0, color: 'rgba(255, 77, 79, 0.3)' },
-              { offset: 1, color: 'rgba(255, 77, 79, 0.05)' },
+              { offset: 0, color: 'rgba(255, 120, 117, 0.25)' },
+              { offset: 1, color: 'rgba(255, 120, 117, 0.02)' },
             ],
           },
         },
@@ -119,7 +136,15 @@ export default function TaskTrendChart({ data, loading }: TaskTrendChartProps) {
   }), [data])
 
   return (
-    <Card title="任务执行趋势 (24小时)" loading={loading}>
+    <Card
+      title="任务执行趋势 (24小时)"
+      loading={loading}
+      style={{
+        background: 'rgba(26, 26, 36, 0.6)',
+        border: '1px solid rgba(255, 255, 255, 0.06)',
+        borderRadius: 12,
+      }}
+    >
       <ReactECharts
         option={option}
         style={{ height: 300 }}

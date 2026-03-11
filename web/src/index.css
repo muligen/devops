@@ -1,3 +1,107 @@
+/* ============================================
+   AgentTeams Design System
+   Modern DevOps Dashboard Theme
+   ============================================ */
+
+:root {
+  /* Primary Colors - Cyber Blue */
+  --primary-50: #e6f4ff;
+  --primary-100: #bae0ff;
+  --primary-200: #91caff;
+  --primary-300: #69b1ff;
+  --primary-400: #4096ff;
+  --primary-500: #1677ff;
+  --primary-600: #0958d9;
+  --primary-700: #003eb3;
+
+  /* Accent Colors - Electric Purple */
+  --accent-50: #f9f0ff;
+  --accent-100: #efdbff;
+  --accent-200: #d3adf7;
+  --accent-300: #b37feb;
+  --accent-400: #9254de;
+  --accent-500: #722ed1;
+  --accent-600: #531dab;
+  --accent-700: #391085;
+
+  /* Surface Colors - Dark Theme */
+  --surface-0: #0a0a0f;
+  --surface-1: #121218;
+  --surface-2: #1a1a24;
+  --surface-3: #24242f;
+  --surface-4: #2e2e3a;
+  --surface-5: #3d3d4d;
+
+  /* Text Colors */
+  --text-primary: #ffffff;
+  --text-secondary: rgba(255, 255, 255, 0.65);
+  --text-tertiary: rgba(255, 255, 255, 0.45);
+  --text-disabled: rgba(255, 255, 255, 0.25);
+
+  /* Status Colors */
+  --success-main: #52c41a;
+  --success-light: #73d13d;
+  --success-bg: rgba(82, 196, 26, 0.15);
+  --success-border: rgba(82, 196, 26, 0.3);
+
+  --warning-main: #faad14;
+  --warning-light: #ffc53d;
+  --warning-bg: rgba(250, 173, 20, 0.15);
+  --warning-border: rgba(250, 173, 20, 0.3);
+
+  --error-main: #ff4d4f;
+  --error-light: #ff7875;
+  --error-bg: rgba(255, 77, 79, 0.15);
+  --error-border: rgba(255, 77, 79, 0.3);
+
+  --info-main: #1677ff;
+  --info-light: #4096ff;
+  --info-bg: rgba(22, 119, 255, 0.15);
+  --info-border: rgba(22, 119, 255, 0.3);
+
+  /* Gradients */
+  --gradient-primary: linear-gradient(135deg, #1677ff 0%, #722ed1 100%);
+  --gradient-accent: linear-gradient(135deg, #722ed1 0%, #eb2f96 100%);
+  --gradient-success: linear-gradient(135deg, #52c41a 0%, #73d13d 100%);
+  --gradient-header: linear-gradient(90deg, #121218 0%, #1a1a24 100%);
+
+  /* Shadows */
+  --shadow-sm: 0 1px 2px rgba(0, 0, 0, 0.3);
+  --shadow-md: 0 4px 12px rgba(0, 0, 0, 0.4);
+  --shadow-lg: 0 8px 24px rgba(0, 0, 0, 0.5);
+  --shadow-glow: 0 0 20px rgba(22, 119, 255, 0.3);
+  --shadow-glow-accent: 0 0 20px rgba(114, 46, 209, 0.3);
+
+  /* Border Radius */
+  --radius-sm: 4px;
+  --radius-md: 8px;
+  --radius-lg: 12px;
+  --radius-xl: 16px;
+  --radius-full: 9999px;
+
+  /* Spacing */
+  --space-1: 4px;
+  --space-2: 8px;
+  --space-3: 12px;
+  --space-4: 16px;
+  --space-5: 20px;
+  --space-6: 24px;
+  --space-8: 32px;
+  --space-10: 40px;
+  --space-12: 48px;
+
+  /* Transitions */
+  --transition-fast: 150ms ease;
+  --transition-normal: 250ms ease;
+  --transition-slow: 350ms ease;
+
+  /* Glass Effect */
+  --glass-bg: rgba(255, 255, 255, 0.05);
+  --glass-border: rgba(255, 255, 255, 0.1);
+  --glass-blur: blur(12px);
+}
+
+/* Reset & Base */
 * {
   margin: 0;
   padding: 0;
@@ -12,29 +116,160 @@ body,
 }
 
 body {
-  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial,
-    'Noto Sans', sans-serif, 'Apple Color Emoji', 'Segoe UI Emoji', 'Segoe UI Symbol',
-    'Noto Color Emoji';
+  font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
+  background: var(--surface-0);
+  color: var(--text-primary);
 }
 
-/* Custom scrollbar */
+/* Custom Scrollbar */
 ::-webkit-scrollbar {
-  width: 8px;
-  height: 8px;
+  width: 6px;
+  height: 6px;
 }
 
 ::-webkit-scrollbar-track {
-  background: #f1f1f1;
-  border-radius: 4px;
+  background: transparent;
 }
 
 ::-webkit-scrollbar-thumb {
-  background: #c1c1c1;
-  border-radius: 4px;
+  background: var(--surface-4);
+  border-radius: var(--radius-full);
 }
 
 ::-webkit-scrollbar-thumb:hover {
-  background: #a8a8a8;
+  background: var(--surface-5);
+}
+
+/* Selection */
+::selection {
+  background: rgba(22, 119, 255, 0.3);
+  color: var(--text-primary);
+}
+
+/* Focus Outline */
+:focus-visible {
+  outline: 2px solid var(--primary-400);
+  outline-offset: 2px;
+}
+
+/* Animations */
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+    transform: translateY(10px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes slideInRight {
+  from {
+    opacity: 0;
+    transform: translateX(-20px);
+  }
+  to {
+    opacity: 1;
+    transform: translateX(0);
+  }
+}
+
+@keyframes pulse {
+  0%, 100% {
+    opacity: 1;
+  }
+  50% {
+    opacity: 0.5;
+  }
+}
+
+@keyframes shimmer {
+  0% {
+    background-position: -200% 0;
+  }
+  100% {
+    background-position: 200% 0;
+  }
+}
+
+@keyframes glow {
+  0%, 100% {
+    box-shadow: 0 0 5px rgba(22, 119, 255, 0.3);
+  }
+  50% {
+    box-shadow: 0 0 20px rgba(22, 119, 255, 0.5);
+  }
+}
+
+/* Utility Classes */
+.animate-fade-in {
+  animation: fadeIn 0.4s var(--transition-normal);
+}
+
+.animate-slide-in {
+  animation: slideInRight 0.4s var(--transition-normal);
+}
+
+.glass {
+  background: var(--glass-bg);
+  backdrop-filter: var(--glass-blur);
+  -webkit-backdrop-filter: var(--glass-blur);
+  border: 1px solid var(--glass-border);
+}
+
+/* Card Styles */
+.card-glow {
+  position: relative;
+  overflow: hidden;
+}
+
+.card-glow::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 1px;
+  background: linear-gradient(90deg, transparent, var(--primary-400), transparent);
+  opacity: 0;
+  transition: opacity var(--transition-normal);
+}
+
+.card-glow:hover::before {
+  opacity: 1;
+}
+
+/* Status Indicators */
+.status-dot {
+  display: inline-block;
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  animation: pulse 2s infinite;
+}
+
+.status-dot.online {
+  background: var(--success-main);
+  box-shadow: 0 0 8px var(--success-main);
+}
+
+.status-dot.offline {
+  background: var(--error-main);
+  box-shadow: 0 0 8px var(--error-main);
+}
+
+.status-dot.warning {
+  background: var(--warning-main);
+  box-shadow: 0 0 8px var(--warning-main);
+}
+
+/* Gradient Text */
+.gradient-text {
+  background: var(--gradient-primary);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
 }

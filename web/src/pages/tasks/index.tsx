@@ -4,6 +4,7 @@ import { ReloadOutlined, EyeOutlined, StopOutlined } from '@ant-design/icons'
 import { taskApi } from '@/api'
 import { formatRelativeTime, formatDate, formatDuration, getStatusColor, getStatusText } from '@/utils'
 import type { Task, TaskListParams } from '@/types'
+import styles from './index.module.css'
 
 const { Title, Text } = Typography
 const { confirm } = Modal
@@ -41,6 +42,7 @@ export default function TasksPage() {
     confirm({
       title: '确认取消任务',
       content: `确定要取消任务 "${task.id}" 吗？`,
+      okButtonProps: { danger: true },
       onOk: async () => {
         try {
           await taskApi.cancel(task.id)
@@ -156,15 +158,19 @@ export default function TasksPage() {
   ]
 
   return (
-    <div>
-      <div style={{ marginBottom: 16, display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+    <div className={styles.container}>
+      <div className={styles.header}>
         <Title level={4} style={{ margin: 0 }}>任务管理</Title>
-        <Button icon={<ReloadOutlined />} onClick={fetchTasks}>
+        <Button
+          icon={<ReloadOutlined />}
+          onClick={fetchTasks}
+          className={styles.refreshButton}
+        >
           刷新
         </Button>
       </div>
 
-      <Card>
+      <Card className={styles.card}>
         <Space style={{ marginBottom: 16 }}>
           <Select
             placeholder="状态筛选"
@@ -182,6 +188,7 @@ export default function TasksPage() {
         </Space>
 
         <Table
+          className={styles.table}
           columns={columns}
           dataSource={tasks}
           rowKey="id"
@@ -204,6 +211,7 @@ export default function TasksPage() {
       </Card>
 
       <Drawer
+        className={styles.drawer}
         title="任务详情"
         width={600}
         open={drawerOpen}
@@ -240,14 +248,7 @@ export default function TasksPage() {
             </Descriptions>
 
             <Title level={5} style={{ marginTop: 24 }}>输出</Title>
-            <pre style={{
-              background: '#f5f5f5',
-              padding: 12,
-              borderRadius: 6,
-              maxHeight: 300,
-              overflow: 'auto',
-              fontSize: 12,
-            }}>
+            <pre className={styles.output}>
               {selectedTask.output || '无输出'}
             </pre>
           </>

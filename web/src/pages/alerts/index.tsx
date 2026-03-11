@@ -4,6 +4,7 @@ import { ReloadOutlined, PlusOutlined, CheckOutlined } from '@ant-design/icons'
 import { alertApi } from '@/api'
 import { formatRelativeTime, getStatusColor, getStatusText } from '@/utils'
 import type { AlertRule, AlertEvent, AlertEventListParams, CreateAlertRuleRequest } from '@/types'
+import styles from './index.module.css'
 
 const { Title, Text } = Typography
 
@@ -189,6 +190,7 @@ export default function AlertsPage() {
             />
           </Space>
           <Table
+            className={styles.table}
             columns={eventColumns}
             dataSource={events}
             rowKey="id"
@@ -223,6 +225,7 @@ export default function AlertsPage() {
             创建规则
           </Button>
           <Table
+            className={styles.table}
             columns={ruleColumns}
             dataSource={rules}
             rowKey="id"
@@ -235,19 +238,24 @@ export default function AlertsPage() {
   ]
 
   return (
-    <div>
-      <div style={{ marginBottom: 16, display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+    <div className={styles.container}>
+      <div className={styles.header}>
         <Title level={4} style={{ margin: 0 }}>告警管理</Title>
-        <Button icon={<ReloadOutlined />} onClick={fetchData}>
+        <Button
+          icon={<ReloadOutlined />}
+          onClick={fetchData}
+          className={styles.refreshButton}
+        >
           刷新
         </Button>
       </div>
 
-      <Card>
-        <Tabs items={items} />
+      <Card className={styles.card}>
+        <Tabs className={styles.tabs} items={items} />
       </Card>
 
       <Modal
+        className={styles.modal}
         title="创建告警规则"
         open={createModalOpen}
         onOk={() => form.submit()}

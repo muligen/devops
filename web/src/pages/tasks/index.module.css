@@ -1,0 +1,138 @@
+.container {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding-bottom: 8px;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.06);
+}
+
+.header :global(.ant-typography) {
+  color: #fff !important;
+}
+
+.refreshButton {
+  background: rgba(255, 255, 255, 0.04) !important;
+  border: 1px solid rgba(255, 255, 255, 0.08) !important;
+  transition: all 0.25s ease !important;
+}
+
+.refreshButton:hover {
+  background: rgba(255, 255, 255, 0.08) !important;
+  border-color: rgba(255, 255, 255, 0.12) !important;
+}
+
+.card {
+  background: rgba(26, 26, 36, 0.6) !important;
+  border: 1px solid rgba(255, 255, 255, 0.06) !important;
+  border-radius: 12px !important;
+  flex: 1;
+}
+
+.card :global(.ant-card-body) {
+  padding: 20px !important;
+}
+
+/* Table customization */
+.table :global(.ant-table) {
+  background: transparent;
+}
+
+.table :global(.ant-table-thead > tr > th) {
+  background: rgba(18, 18, 24, 0.8) !important;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.06) !important;
+  color: rgba(255, 255, 255, 0.65) !important;
+  font-weight: 500;
+}
+
+.table :global(.ant-table-tbody > tr) {
+  transition: background 0.2s ease;
+}
+
+.table :global(.ant-table-tbody > tr:hover > td) {
+  background: rgba(255, 255, 255, 0.04) !important;
+}
+
+.table :global(.ant-table-tbody > tr > td) {
+  border-bottom: 1px solid rgba(255, 255, 255, 0.04) !important;
+  color: rgba(255, 255, 255, 0.88) !important;
+}
+
+.table :global(.ant-pagination-item) {
+  background: rgba(255, 255, 255, 0.04) !important;
+  border-color: rgba(255, 255, 255, 0.1) !important;
+  transition: all 0.2s ease !important;
+}
+
+.table :global(.ant-pagination-item:hover) {
+  border-color: var(--primary-400) !important;
+}
+
+.table :global(.ant-pagination-item-active) {
+  background: linear-gradient(135deg, #1677ff 0%, #722ed1 100%) !important;
+  border-color: transparent !important;
+}
+
+.table :global(.ant-pagination-item-active a) {
+  color: #fff !important;
+}
+
+/* Drawer customization */
+.drawer :global(.ant-drawer-content),
+.drawer :global(.ant-drawer-header),
+.drawer :global(.ant-drawer-body) {
+  background: #1a1a24 !important;
+}
+
+.drawer :global(.ant-drawer-title) {
+  color: #fff !important;
+}
+
+.output {
+  background: rgba(18, 18, 24, 0.5) !important;
+  padding: 16px !important;
+  border-radius: 8px !important;
+  border: 1px solid rgba(255, 255, 255, 0.06) !important;
+  max-height: 300px;
+  overflow: auto;
+  font-size: 12px;
+  color: rgba(255, 255, 255, 0.88);
+}
+
+.output::-webkit-scrollbar {
+  width: 6px;
+}
+
+.output::-webkit-scrollbar-thumb {
+  background: rgba(255, 255, 255, 0.1);
+  border-radius: 3px;
+}
+
+/* Descriptions customization */
+:global(.ant-descriptions-item-label) {
+  background: rgba(18, 18, 24, 0.5) !important;
+  color: rgba(255, 255, 255, 0.65) !important;
+}
+
+:global(.ant-descriptions-item-content) {
+  background: rgba(26, 26, 36, 0.3) !important;
+  color: rgba(255, 255, 255, 0.88) !important;
+  border-color: rgba(255, 255, 255, 0.04) !important;
+}
+
+:global(.ant-descriptions-bordered .ant-descriptions-view) {
+  border-color: rgba(255, 255, 255, 0.06) !important;
+}
+
+:global(.ant-descriptions-bordered .ant-descriptions-item-label) {
+  border-color: rgba(255, 255, 255, 0.06) !important;
+}
+
+:global(.ant-descriptions-bordered .ant-descriptions-item-content) {
+  border-color: rgba(255, 255, 255, 0.06) !important;
+}

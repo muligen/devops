@@ -7,6 +7,7 @@ import {
   AlertOutlined,
   UserOutlined,
   LogoutOutlined,
+  ApiOutlined,
 } from '@ant-design/icons'
 import { useNavigate, useLocation } from 'react-router-dom'
 import { useAuthStore } from '@/stores/auth'
@@ -76,9 +77,10 @@ export default function MainLayout() {
     <Layout className={styles.layout}>
       <Sider width={220} className={styles.sider}>
         <div className={styles.logo}>
-          <Text strong style={{ fontSize: 18, color: '#fff' }}>
-            AgentTeams
-          </Text>
+          <div className={styles.logoIcon}>
+            <ApiOutlined style={{ color: '#fff', fontSize: 18 }} />
+          </div>
+          <Text className={styles.logoText}>AgentTeams</Text>
         </div>
         <Menu
           theme="dark"
@@ -91,11 +93,14 @@ export default function MainLayout() {
       <Layout>
         <Header className={styles.header}>
           <div className={styles.headerRight}>
-            <Badge
-              status={isConnected ? 'success' : 'error'}
-              text={isConnected ? '已连接' : '未连接'}
-              className={styles.connectionStatus}
-            />
+            <div className={styles.connectionStatus}>
+              <Badge
+                status={isConnected ? 'success' : 'error'}
+              />
+              <Text type="secondary">
+                {isConnected ? '已连接' : '未连接'}
+              </Text>
+            </div>
             <Dropdown
               menu={{
                 items: userMenuItems,
@@ -108,7 +113,12 @@ export default function MainLayout() {
               trigger={['click']}
             >
               <Space className={styles.userDropdown}>
-                <Avatar icon={<UserOutlined />} />
+                <Avatar
+                  icon={<UserOutlined />}
+                  style={{
+                    background: 'linear-gradient(135deg, #1677ff 0%, #722ed1 100%)',
+                  }}
+                />
                 <Text>{user?.username || '用户'}</Text>
               </Space>
             </Dropdown>

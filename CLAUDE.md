@@ -63,20 +63,3 @@ cd web && npm install && npm run lint && npm run build
 Types: feat, fix, docs, refactor, test, chore
 Scopes: agent, server, web, api, auth, task, monitor
 ```
-
-## 注意事项
-
-### 时区处理
-- 数据库存储 UTC 时间
-- 后端查询使用 `time.Now().UTC()`
-- 前端显示时自动转换本地时区
-
-### WebSocket 连接
-- 在 `AlertNotificationProvider` 初始化，全局保持连接
-- 不要在页面组件中重复调用 `useWebSocket()`
-
-### Metrics 数据
-- Agent 每 30 秒采集一次指标
-- 后端默认 limit=100，前端需根据时间范围传递合适的 limit
-- 支持 range 参数: `1h`, `24h`, `7d`
-
