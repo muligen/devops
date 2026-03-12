@@ -47,7 +47,7 @@ test.describe('Login Flow', () => {
     await expect(page).toHaveURL(/.*dashboard/, { timeout: 10000 });
   });
 
-  test('should persist login state', async ({ page, context }) => {
+  test('should persist login state', async ({ page }) => {
     // Skip if no test credentials available
     test.skip(!process.env.TEST_USERNAME || !process.env.TEST_PASSWORD);
 

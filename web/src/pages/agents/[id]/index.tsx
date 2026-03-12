@@ -1,13 +1,14 @@
 import { useEffect, useState, useMemo } from 'react'
 import { useParams, useNavigate } from 'react-router-dom'
-import { Card, Row, Col, Typography, Tag, Descriptions, Button, Progress, Space, Empty, Spin } from 'antd'
+import { Card, Row, Col, Typography, Descriptions, Button, Progress, Space, Tabs } from 'antd'
 import { ArrowLeftOutlined, ReloadOutlined, PlayCircleOutlined } from '@ant-design/icons'
 import ReactECharts from 'echarts-for-react'
 import { agentApi } from '@/api'
-import { formatRelativeTime, formatDate } from '@/utils'
+import { formatDate } from '@/utils'
 import type { Agent } from '@/types'
-import RecentTasks from '@/components/agents/RecentTasks'
+import { AgentTerminal } from '@/components/terminal'
 import ExecuteTaskModal from '@/components/tasks/ExecuteTaskModal'
+import styles from './index.module.css'
 
 const { Title } = Typography
 
@@ -26,6 +27,7 @@ export default function AgentDetailPage() {
   const [metrics, setMetrics] = useState<MetricData[]>([])
   const [timeRange, setTimeRange] = useState('1h')
   const [executeModalOpen, setExecuteModalOpen] = useState(false)
+  const [activeTab, setActiveTab] = useState('terminal')
 
   const fetchAgent = async () => {
     if (!id) return
@@ -60,12 +62,10 @@ export default function AgentDetailPage() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [id, timeRange])
 
-  // Prepare chart data from metrics (must be before any conditional returns)
   const historyChartOption = useMemo(() => {
     const chartData = metrics.slice().reverse()
     const xAxisData = chartData.map((m) => {
       const date = new Date(m.collected_at)
-      // Format based on time range: show date for 24h and 7d, only time for 1h
       if (timeRange === '1h') {
         return date.toLocaleTimeString('zh-CN', { hour: '2-digit', minute: '2-digit' })
       } else {
@@ -74,8 +74,8 @@ export default function AgentDetailPage() {
       }
     })
     const cpuData = chartData.map((m) => m.cpu_usage)
-    const memoryData = chartData.map((m) => m.memory_percent)
-    const diskData = chartData.map((m) => m.disk_percent)
+        const memoryData = chartData.map((m) => m.memory_percent)
+        const diskData = chartData.map((m) => m.disk_percent)
 
     return {
       tooltip: {
@@ -86,7 +86,7 @@ export default function AgentDetailPage() {
             result += `${item.seriesName}: ${item.value?.toFixed(1)}%<br/>`
           })
           return result
-        }
+        },
       },
       legend: { data: ['CPU', '内存', '磁盘'], bottom: 0 },
       grid: {
@@ -115,14 +115,18 @@ export default function AgentDetailPage() {
 
   if (loading) {
     return (
-      <div style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', minHeight: 400 }}>
-        <Spin size="large" />
+      <div className={styles.loading}>
+        <span>加载中...</span>
       </div>
     )
   }
 
   if (!agent) {
-    return <Empty description="Agent 不存在" />
+    return (
+      <div style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', minHeight: 400 }}>
+        <span>Agent 不存在</span>
+      </div>
+    )
   }
 
   const cpuGaugeOption = {
@@ -144,9 +148,7 @@ export default function AgentDetailPage() {
             ],
           },
         },
-        pointer: {
-          itemStyle: { color: 'auto' },
-        },
+        pointer: { itemStyle: { color: 'auto' } },
         axisTick: { show: false },
         splitLine: { show: false },
         axisLabel: { show: false },
@@ -176,9 +178,7 @@ export default function AgentDetailPage() {
             ],
           },
         },
-        pointer: {
-          itemStyle: { color: 'auto' },
-        },
+        pointer: { itemStyle: { color: 'auto' } },
         axisTick: { show: false },
         splitLine: { show: false },
         axisLabel: { show: false },
@@ -189,50 +189,72 @@ export default function AgentDetailPage() {
     ],
   }
 
+  const tabItems = [
+    {
+      key: 'terminal',
+      label: (
+        <span style={{ display: 'inline-flex', alignItems: 'center', gap: 6 }}>
+          <span>终端</span>
+          {agent.status === 'online' && (
+            <span style={{
+              fontSize: 11,
+              color: '#73d13d',
+            }}>
+              ● 在线
+            </span>
+          )}
+        </span>
+      ),
+      children: (
+        <div style={{ height: '600px' }}>
+          <AgentTerminal
+            agent={agent}
+          />
+        </div>
+      ),
+    },
+    {
+      key: 'tasks',
+      label: '最近任务',
+      children: (
+        <div style={{ padding: 16 }}>
+          <span>最近任务列表将在此显示...</span>
+        </div>
+      ),
+    },
+  ]
+
   return (
-    <div>
-      <div style={{ marginBottom: 16 }}>
+    <div className={styles.container}>
+      <div className={styles.header}>
         <Button icon={<ArrowLeftOutlined />} onClick={() => navigate('/agents')}>
           返回列表
         </Button>
+        <Space>
+          <Button icon={<ReloadOutlined />} onClick={fetchAgent}>
+            刷新
+          </Button>
+          <Button
+            type="primary"
+            icon={<PlayCircleOutlined />}
+            onClick={() => setExecuteModalOpen(true)}
+            disabled={agent.status !== 'online'}
+          >
+            批量执行
+          </Button>
+        </Space>
       </div>
 
       <Row gutter={[16, 16]}>
         <Col xs={24} lg={8}>
-          <Card
-            title={
-              <Space>
-                <span>{agent.name}</span>
-                <Tag color={agent.status === 'online' ? 'success' : 'error'}>
-                  {agent.status === 'online' ? '在线' : '离线'}
-                </Tag>
-              </Space>
-            }
-            extra={
-              <Space>
-                <Button icon={<ReloadOutlined />} onClick={fetchAgent}>
-                  刷新
-                </Button>
-                <Button
-                  type="primary"
-                  icon={<PlayCircleOutlined />}
-                  onClick={() => setExecuteModalOpen(true)}
-                  disabled={agent.status !== 'online'}
-                >
-                  执行任务
-                </Button>
-              </Space>
-            }
-          >
+          <Card title={agent.name}>
             <Descriptions column={1} size="small">
-              <Descriptions.Item label="主机名">{agent.hostname}</Descriptions.Item>
-              <Descriptions.Item label="IP 地址">{agent.ip_address}</Descriptions.Item>
-              <Descriptions.Item label="操作系统">{agent.os_info}</Descriptions.Item>
-              <Descriptions.Item label="Agent 版本">{agent.version}</Descriptions.Item>
-              <Descriptions.Item label="首次上线">{formatDate(agent.created_at)}</Descriptions.Item>
-              <Descriptions.Item label="最后心跳">
-                {formatRelativeTime(agent.last_seen_at)}
-              </Descriptions.Item>
+              <Descriptions.Item label="主机名">{agent.hostname || '-'}</Descriptions.Item>
+              <Descriptions.Item label="IP 地址">{agent.ip_address || '-'}</Descriptions.Item>
+              <Descriptions.Item label="操作系统">{agent.os_info || '-'}</Descriptions.Item>
+              <Descriptions.Item label="Agent 版本">{agent.version || '-'}</Descriptions.Item>
+              <Descriptions.Item label="首次上线">{agent.created_at ? formatDate(agent.created_at) : '-'}</Descriptions.Item>
+              <Descriptions.Item label="最后心跳">{agent.last_seen_at ? formatDate(agent.last_seen_at) : '-'}</Descriptions.Item>
             </Descriptions>
           </Card>
         </Col>
@@ -298,7 +320,13 @@ export default function AgentDetailPage() {
         </Col>
 
         <Col xs={24} lg={12}>
-          <RecentTasks agentId={agent.id} limit={5} />
+          <Card title={<span className={styles.terminalTabTitle}>交互终端</span>}>
+            <Tabs
+              activeKey={activeTab}
+              onChange={setActiveTab}
+              items={tabItems}
+            />
+          </Card>
         </Col>
       </Row>
 
@@ -306,7 +334,7 @@ export default function AgentDetailPage() {
         open={executeModalOpen}
         onClose={() => setExecuteModalOpen(false)}
         onSuccess={fetchAgent}
-        initialAgentIds={[agent.id]}
+        agentId={id}
       />
     </div>
   )

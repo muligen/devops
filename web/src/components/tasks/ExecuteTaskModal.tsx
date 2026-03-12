@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react'
-import { Modal, Form, Select, Input, InputNumber, Space, Tag, message, Spin, Alert } from 'antd'
+import { Modal, Form, Select, Input, InputNumber, Space, Tag, message, Spin } from 'antd'
 import { PlayCircleOutlined } from '@ant-design/icons'
 import { agentApi, taskApi } from '@/api'
 import type { Agent } from '@/types'
@@ -8,26 +8,26 @@ interface ExecuteTaskModalProps {
   open: boolean
   onClose: () => void
   onSuccess: () => void
-  initialAgentIds?: string[]
+  agentId?: string
 }
 
-const builtinCommands = [
-  { value: 'system_info', label: '系统信息' },
-  { value: 'network_info', label: '网络信息' },
-  { value: 'disk_usage', label: '磁盘使用情况' },
-  { value: 'process_list', label: '进程列表' },
-  { value: 'service_list', label: '服务列表' },
-  { value: 'restart_service', label: '重启服务' },
-  { value: 'clear_cache', label: '清理缓存' },
-]
-
-export default function ExecuteTaskModal({ open, onClose, onSuccess, initialAgentIds }: ExecuteTaskModalProps) {
+export default function ExecuteTaskModal({ open, onClose, onSuccess, agentId }: ExecuteTaskModalProps) {
   const [form] = Form.useForm()
   const [loading, setLoading] = useState(false)
   const [agents, setAgents] = useState<Agent[]>([])
   const [agentsLoading, setAgentsLoading] = useState(false)
   const [commandType, setCommandType] = useState<'shell' | 'builtin'>('shell')
-  const [selectedAgents, setSelectedAgents] = useState<string[]>(initialAgentIds || [])
+  const [selectedAgentId, setSelectedAgentId] = useState<string | undefined>(agentId)
+
+  const builtinCommands = [
+    { value: 'system_info', label: '系统信息' },
+    { value: 'network_info', label: '网络信息' },
+    { value: 'disk_usage', label: '磁盘使用情况' },
+    { value: 'process_list', label: '进程列表' },
+    { value: 'service_list', label: '服务列表' },
+    { value: 'restart_service', label: '重启服务' },
+    { value: 'clear_cache', label: '清理缓存' },
+  ]
 
   const fetchAgents = async () => {
     setAgentsLoading(true)
@@ -44,38 +44,35 @@ export default function ExecuteTaskModal({ open, onClose, onSuccess, initialAgen
   useEffect(() => {
     if (open) {
       fetchAgents()
-      if (initialAgentIds && initialAgentIds.length > 0) {
-        setSelectedAgents(initialAgentIds)
-        form.setFieldValue('agent_ids', initialAgentIds)
+      if (agentId) {
+        setSelectedAgentId(agentId)
+        form.setFieldValue('agentId', agentId)
       }
     }
-  }, [open, initialAgentIds, form])
+  }, [open, agentId, form])
 
-  const handleSubmit = async (values: CreateTaskRequest) => {
-    if (selectedAgents.length === 0) {
-      message.error('请选择至少一个 Agent')
+  const handleSubmit = async (values: Record<string, unknown>) => {
+    if (!selectedAgentId) {
+      message.error('请选择一个 Agent')
       return
     }
 
+    const commandValue = commandType === 'builtin' ? values.builtinCommand : values.command
+
     setLoading(true)
     try {
-      // Create tasks for all selected agents
-      for (const agentId of selectedAgents) {
-        await taskApi.create({
-          agent_id: agentId,
-          type: 'exec_shell',
-          params: {
-            command: values.command,
-            command_type: values.command_type,
-          },
-          timeout: values.timeout || 300,
-          priority: values.priority || 0,
-        })
-      }
+      // Use the legacy API method which accepts shell/builtin command types
+      await taskApi.createLegacy({
+        agent_ids: [selectedAgentId],
+        command: commandValue as string,
+        command_type: commandType,
+        timeout: (values.timeout as number) || 300,
+        priority: (values.priority as number) || 0,
+      })
 
-      message.success(`已创建 ${selectedAgents.length} 个任务`)
+      message.success('任务已创建')
       form.resetFields()
-      setSelectedAgents([])
+      setSelectedAgentId(undefined)
       onSuccess()
       onClose()
     } catch {
@@ -87,7 +84,7 @@ export default function ExecuteTaskModal({ open, onClose, onSuccess, initialAgen
 
   const handleClose = () => {
     form.resetFields()
-    setSelectedAgents([])
+    setSelectedAgentId(undefined)
     setCommandType('shell')
     onClose()
   }
@@ -125,41 +122,29 @@ export default function ExecuteTaskModal({ open, onClose, onSuccess, initialAgen
           }}
         >
           <Form.Item
-            name="agent_ids"
+            name="agentId"
             label="选择 Agent"
-            rules={[{ required: true, message: '请选择至少一个 Agent' }]}
+            rules={[{ required: true, message: '请选择一个 Agent' }]}
           >
             <Select
-              mode="multiple"
               placeholder="选择要执行任务的 Agent"
               loading={agentsLoading}
-              value={selectedAgents}
-              onChange={(values) => setSelectedAgents(values as string[])}
-              optionFilterProp="label"
+              value={selectedAgentId}
+              onChange={(value) => setSelectedAgentId(value)}
+              optionFilterProp="children"
               options={agents.map((agent) => ({
                 value: agent.id,
-                label: `${agent.name} (${agent.hostname})`,
+                label: `${agent.name} (${agent.hostname || '-'})`,
               }))}
-              maxTagCount={5}
-              maxTagPlaceholder={(omitted) => `+${omitted.length} 更多`}
             />
           </Form.Item>
-
-          {selectedAgents.length > 0 && (
-            <Alert
-              type="info"
-              showIcon
-              message={`已选择 ${selectedAgents.length} 个 Agent`}
-              style={{ marginBottom: 16 }}
-            />
-          )}
 
           <Form.Item
             name="command_type"
             label="命令类型"
             rules={[{ required: true }]}
           >
-            <Select onChange={(value) => setCommandType(value as 'shell' | 'builtin')}>
+            <Select onChange={(value) => setCommandType(value)}>
               <Select.Option value="shell">
                 <Tag color="blue">Shell</Tag> 执行 Shell 命令
               </Select.Option>
@@ -183,7 +168,7 @@ export default function ExecuteTaskModal({ open, onClose, onSuccess, initialAgen
             </Form.Item>
           ) : (
             <Form.Item
-              name="command"
+              name="builtinCommand"
               label="内置命令"
               rules={[{ required: true, message: '请选择内置命令' }]}
             >
@@ -191,7 +176,7 @@ export default function ExecuteTaskModal({ open, onClose, onSuccess, initialAgen
             </Form.Item>
           )}
 
-          <Space style={{ width: '100%' }} size="large">
+          <Space style={{ width: '100%' }} size="middle">
             <Form.Item
               name="timeout"
               label="超时时间 (秒)"
