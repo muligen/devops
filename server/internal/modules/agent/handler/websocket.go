@@ -15,6 +15,7 @@ import (
 
 	"github.com/agentteams/server/internal/modules/agent/domain"
 	"github.com/agentteams/server/internal/modules/agent/service"
+	taskDomain "github.com/agentteams/server/internal/modules/task/domain"
 	"github.com/agentteams/server/internal/pkg/cache"
 	"github.com/agentteams/server/internal/pkg/logger"
 	"github.com/agentteams/server/internal/pkg/mq"
@@ -94,12 +95,24 @@ func (s *Session) Close() {
 type WebSocketHandler struct {
 	agentService   *service.Service
 	taskService    TaskResultService
+	dispatcher     TaskDispatcher
 	metricsService MetricsService
 	cache          *cache.Client
 	mq             *mq.Client
 	upgrader       websocket.Upgrader
 	sessions       sync.Map // map[string]*Session (agentID -> Session)
 	logger         *logger.Logger
+}
+
+// TaskDispatcher defines the interface for task dispatching.
+type TaskDispatcher interface {
+	SendCommand(agentID string, command map[string]interface{}) error
+	IsAgentConnected(agentID string) bool
+}
+
+// TaskDispatcherService defines the interface for task dispatching.
+type TaskDispatcherService interface {
+	GetPendingTasksForAgent(ctx context.Context, agentID string) ([]taskDomain.Task, error)
 }
 
 // TaskResultService defines the interface for task result handling.
@@ -133,6 +146,17 @@ func NewWebSocketHandler(agentService *service.Service, cache *cache.Client, mq 
 // SetTaskService sets the task result service.
 func (h *WebSocketHandler) SetTaskService(svc TaskResultService) {
 	h.taskService = svc
+}
+
+// SetDispatcher sets the task dispatcher.
+func (h *WebSocketHandler) SetDispatcher(dispatcher TaskDispatcher) {
+	h.dispatcher = dispatcher
+}
+
+// SetDispatcherService sets the task dispatcher service.
+func (h *WebSocketHandler) SetDispatcherService(svc TaskDispatcherService) {
+	// We'll keep a reference internally if needed for future use
+	// For now, this method exists for completeness
 }
 
 // SetMetricsService sets the metrics service.
@@ -345,7 +369,57 @@ func (h *WebSocketHandler) handleChallengeResponse(session *Session, data json.R
 
 	h.logger.Infow("Agent authenticated", "agent_id", agent.ID, "agent_name", agent.Name)
 
+	// Dispatch pending tasks for this agent
+	go h.dispatchPendingTasks(ctx, agent.ID)
+
 	return nil
+}
+
+// dispatchPendingTasks dispatches all pending tasks for an agent.
+func (h *WebSocketHandler) dispatchPendingTasks(ctx context.Context, agentID string) {
+	// Use reflection/type assertion to access the full TaskService methods
+	type getPendingTasks interface {
+		GetPendingTasksForAgent(ctx context.Context, agentID string) ([]taskDomain.Task, error)
+	}
+
+	dispatcher, ok := h.taskService.(getPendingTasks)
+	if !ok || h.dispatcher == nil {
+		h.logger.Warnw("Cannot dispatch pending tasks: dispatcher or task service not available", "agent_id", agentID)
+		return
+	}
+
+	// Get pending tasks
+	tasks, err := dispatcher.GetPendingTasksForAgent(ctx, agentID)
+	if err != nil {
+		h.logger.Errorw("Failed to get pending tasks", "error", err, "agent_id", agentID)
+		return
+	}
+
+	if len(tasks) == 0 {
+		return
+	}
+
+	h.logger.Infow("Dispatching pending tasks", "agent_id", agentID, "count", len(tasks))
+
+	// Dispatch each task
+	for _, task := range tasks {
+		command := map[string]interface{}{
+			"command_id":   task.ID,
+			"command_type": task.Type,
+			"params":       task.Params,
+			"timeout":      task.Timeout,
+		}
+
+		if err := h.dispatcher.SendCommand(task.AgentID, command); err != nil {
+			h.logger.Errorw("Failed to dispatch pending task", "error", err, "task_id", task.ID)
+		} else {
+			// Update task status to running
+			if h.taskService != nil {
+				_ = h.taskService.StartTask(ctx, task.ID)
+			}
+			h.logger.Infow("Pending task dispatched", "task_id", task.ID, "agent_id", task.AgentID)
+		}
+	}
 }
 
 // handleHeartbeat handles heartbeat messages.

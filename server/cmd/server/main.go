@@ -274,6 +274,9 @@ func (app *Application) setupRouter() (*gin.Engine, DashboardWSStarter) {
 	)
 	taskSvc.SetDispatcher(taskDispatcher)
 
+	// Set dispatcher on wsHandler for pending task dispatch
+	wsHandler.SetDispatcher(taskDispatcher)
+
 	// Wire WebSocket handler to task service for result handling
 	wsHandler.SetTaskService(taskSvc)
 

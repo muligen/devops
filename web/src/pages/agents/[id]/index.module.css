@@ -1,34 +1,646 @@
+/* ============================================
+   Agent Detail Page - Industrial Dashboard Theme
+   精密监控 · 数据驱动 · 工业美学
+   ============================================ */
+
+/* Container */
 .container {
+  position: relative;
+  height: calc(100vh - 48px);
+  padding: 24px;
+  background: var(--surface-0);
+  overflow: hidden;
   display: flex;
   flex-direction: column;
-  gap: 16px;
 }
 
+/* Scanline Overlay Effect */
+.scanlines {
+  position: fixed;
+  inset: 0;
+  pointer-events: none;
+  z-index: 1;
+  background: repeating-linear-gradient(
+    0deg,
+    rgba(0, 0, 0, 0.02),
+    rgba(0, 0, 0, 0.02) 1px,
+    transparent 1px,
+    transparent 2px
+  );
+}
+
+/* Grid Layout */
+.grid {
+  position: relative;
+  display: grid;
+  grid-template-columns: repeat(12, 1fr);
+  grid-template-rows: 220px 1fr;
+  gap: 12px;
+  flex: 1;
+  min-height: 0;
+  z-index: 2;
+}
+
+.infoCard,
+.metricsCard,
+.chartCard,
+.terminalCard {
+  min-height: 0;
+  overflow: hidden;
+}
+
+.infoCard {
+  grid-column: 1 / 4;
+  grid-row: 1;
+}
+
+.metricsCard {
+  grid-column: 4 / 13;
+  grid-row: 1;
+}
+
+.chartCard {
+  grid-column: 1 / 7;
+  grid-row: 2;
+}
+
+.terminalCard {
+  grid-column: 7 / 13;
+  grid-row: 2;
+}
+
+@media (max-width: 1400px) {
+  .grid {
+    grid-template-columns: repeat(12, 1fr);
+    grid-template-rows: auto auto auto auto;
+    gap: 12px;
+  }
+
+  .infoCard {
+    grid-column: 1 / 13;
+    grid-row: 1;
+  }
+
+  .metricsCard {
+    grid-column: 1 / 13;
+    grid-row: 2;
+  }
+
+  .chartCard {
+    grid-column: 1 / 13;
+    grid-row: 3;
+  }
+
+  .terminalCard {
+    grid-column: 1 / 13;
+    grid-row: 4;
+  }
+}
+
+/* Header */
 .header {
+  position: relative;
   display: flex;
   justify-content: space-between;
   align-items: center;
-  padding-bottom: 8px;
-  border-bottom: 1px solid rgba(255, 255, 255, 0.06);
+  margin-bottom: 12px;
+  padding: 16px 20px;
+  background: linear-gradient(180deg, rgba(26, 26, 36, 0.9) 0%, rgba(18, 18, 24, 0.98) 100%);
+  border: 1px solid rgba(255, 255, 255, 0.06);
+  border-radius: 8px;
+  z-index: 2;
 }
 
-.header :global(.ant-typography) {
-  color: #fff !important;
+.header::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 1px;
+  background: linear-gradient(90deg, transparent, rgba(0, 243, 255, 0.5), transparent);
 }
 
-.agentName {
-  font-size: 15px;
-  font-weight: 500;
+.headerLeft {
+  display: flex;
+  align-items: center;
+  gap: 20px;
+}
+
+.headerDivider {
+  width: 1px;
+  height: 40px;
+  background: rgba(255, 255, 255, 0.08);
+}
+
+.navButton {
+  background: transparent;
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  color: rgba(255, 255, 255, 0.7);
+  height: 40px;
+  padding: 0 16px;
+  transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.navButton:hover {
+  background: rgba(255, 255, 255, 0.05);
+  border-color: rgba(0, 243, 255, 0.4);
   color: #fff;
 }
 
-.terminalTabTitle {
-  color: rgba(255, 255, 255, 0.88);
+.agentName {
+  margin: 0;
+  font-size: 18px;
+  font-weight: 500;
+  color: #fff;
+  letter-spacing: 0.5px;
 }
 
-.loading {
+.agentMeta {
   display: flex;
-  justify-content: center;
   align-items: center;
-  min-height: 400px;
+  gap: 8px;
+  margin-top: 2px;
+}
+
+.hostname {
+  font-size: 12px;
+  color: rgba(255, 255, 255, 0.45);
+}
+
+.metaSeparator {
+  color: rgba(255, 255, 255, 0.15);
+}
+
+.ip {
+  font-size: 12px;
+  color: rgba(255, 255, 255, 0.45);
+}
+
+.headerButton {
+  height: 40px;
+  background: transparent;
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  color: rgba(255, 255, 255, 0.7);
+  transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.headerButton:hover:not(:disabled) {
+  background: rgba(255, 255, 255, 0.05);
+  border-color: rgba(0, 243, 255, 0.4);
+  color: #fff;
+}
+
+.headerButton:disabled {
+  border-color: rgba(255, 255, 255, 0.05);
+  color: rgba(255, 255, 255, 0.2);
+}
+
+.primaryButton {
+  background: rgba(0, 243, 255, 0.1);
+  border-color: rgba(0, 243, 255, 0.4);
+  color: #00f3ff;
+}
+
+.primaryButton:hover:not(:disabled) {
+  background: rgba(0, 243, 255, 0.2);
+  border-color: #00f3ff;
+  box-shadow: 0 0 20px rgba(0, 243, 255, 0.3);
+}
+
+/* Cards */
+.card {
+  position: relative;
+  background: linear-gradient(180deg, rgba(20, 20, 28, 0.8) 0%, rgba(14, 14, 20, 0.95) 100%);
+  border: 1px solid rgba(255, 255, 255, 0.06);
+  border-radius: 8px;
+  overflow: hidden;
+  backdrop-filter: blur(12px);
+  min-height: 0;
+}
+
+.chartCard,
+.terminalCard,
+.metricsCard {
+  display: flex;
+  flex-direction: column;
+  min-height: 0;
+  overflow: hidden;
+}
+
+.card :global(.echarts-for-react),
+.card :global(.echarts-container) {
+  flex: 1;
+  min-height: 0;
+}
+
+.cardTitle {
+  flex-shrink: 0;
+}
+
+.card::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 1px;
+  background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.08), transparent);
+}
+
+.card::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  border-radius: 8px;
+  padding: 1px;
+  background: linear-gradient(180deg, rgba(255, 255, 255, 0.03) 0%, transparent 100%);
+  -webkit-mask: linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0);
+  mask: linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0);
+  -webkit-mask-composite: xor;
+  mask-composite: exclude;
+  pointer-events: none;
+}
+
+.card:hover :global(.echarts-for-react),
+.card:hover :global(.echarts-container) {
+  filter: brightness(1.02);
+}
+
+.cardTitle {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin: 0;
+  padding: 12px 16px;
+  font-size: 12px;
+  font-weight: 600;
+  color: rgba(255, 255, 255, 0.5);
+  text-transform: uppercase;
+  letter-spacing: 1.5px;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.04);
+}
+
+.cardTitle svg {
+  font-size: 14px;
+  color: rgba(255, 255, 255, 0.3);
+}
+
+.cardTitleLine {
+  flex: 1;
+  height: 1px;
+  background: linear-gradient(90deg, rgba(255, 255, 255, 0.08), transparent);
+  margin-left: 12px;
+}
+
+/* Info Grid */
+.infoGrid {
+  padding: 12px 16px;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  flex: 1;
+  min-height: 0;
+  overflow-y: auto;
+}
+
+.infoRow {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 8px 0;
+  border-bottom: 1px dashed rgba(255, 255, 255, 0.04);
+}
+
+.infoRow:last-child {
+  border-bottom: none;
+}
+
+.infoLabel {
+  font-size: 12px;
+  color: rgba(255, 255, 255, 0.35);
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.infoLabel svg {
+  font-size: 12px;
+  margin-right: 4px;
+}
+
+.infoValue {
+  font-size: 12px;
+  color: rgba(255, 255, 255, 0.7);
+  text-align: right;
+}
+
+/* Status */
+.status {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 4px 10px;
+  border-radius: 4px;
+  font-size: 12px;
+  font-weight: 600;
+  letter-spacing: 1px;
+}
+
+.status.online {
+  background: rgba(0, 255, 143, 0.1);
+  border: 1px solid rgba(0, 255, 143, 0.3);
+  color: #00ff8f;
+  box-shadow: 0 0 12px rgba(0, 255, 143, 0.15);
+}
+
+.status.offline {
+  background: rgba(255, 77, 79, 0.1);
+  border: 1px solid rgba(255, 77, 79, 0.3);
+  color: #ff4d4f;
+}
+
+.statusDot {
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: currentColor;
+  animation: statusPulse 2s ease-in-out infinite;
+}
+
+.status.online .statusDot {
+  box-shadow: 0 0 8px currentColor;
+}
+
+@keyframes statusPulse {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.5; }
+}
+
+/* Gauges Grid */
+.gaugesGrid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  align-items: start;
+  padding: 12px 16px;
+  gap: 0;
+  flex: 1;
+  min-height: 0;
+}
+
+.gaugesGrid > :global(.react_echarts_container) {
+  border-right: 1px solid rgba(255, 255, 255, 0.04);
+  min-height: 0;
+}
+
+.gaugesGrid > :global(.react_echarts_container):last-child {
+  border-right: none;
+}
+
+.gaugeWrapper {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  height: 100%;
+  min-height: 0;
+  overflow: hidden;
+}
+
+.gaugeWrapper :global(.react_echarts_container) {
+  height: 100% !important;
+  min-height: 0;
+}
+
+/* Chart Card */
+.chartHeader {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 12px 16px;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.04);
+}
+
+.chartHeader .cardTitle {
+  margin: 0;
+  padding: 0;
+  border: none;
+}
+
+.timeButtons {
+  display: flex;
+  gap: 4px;
+}
+
+.timeButton {
+  padding: 6px 14px;
+  background: transparent;
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  border-radius: 4px;
+  font-size: 13px;
+  font-weight: 500;
+  color: rgba(255, 255, 255, 0.4);
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.timeButton:hover {
+  border-color: rgba(0, 243, 255, 0.3);
+  color: rgba(255, 255, 255, 0.7);
+}
+
+.timeButton.active {
+  background: rgba(0, 243, 255, 0.1);
+  border-color: rgba(0, 243, 255, 0.4);
+  color: #00f3ff;
+}
+
+.chartWrapper {
+  flex: 1;
+  min-height: 0;
+  padding: 12px 16px;
+}
+
+.chartWrapper :global(.echarts-for-react) {
+  height: 100% !important;
+  min-height: 0;
+}
+
+.chartWrapper :global(.echarts-container) {
+  height: 100% !important;
+  min-height: 0;
+}
+
+/* Terminal Card */
+.tabs {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+}
+
+.tabs :global(.ant-tabs-nav) {
+  flex-shrink: 0;
+  border-bottom: none;
+  margin: 0;
+  padding: 0;
+}
+
+.tabs :global(.ant-tabs-tab) {
+  padding: 12px 8px;
+  background: transparent;
+  border: none;
+  margin: 0;
+  margin-right: 4px;
+}
+
+.tabs :global(.ant-tabs-tab:hover) {
+  color: rgba(255, 255, 255, 0.8);
+}
+
+.tabs :global(.ant-tabs-tab-active) {
+  background: transparent;
+}
+
+.tabs :global(.ant-tabs-tab-active .ant-tabs-tab-btn) {
+  color: #00f3ff;
+  text-shadow: 0 0 12px rgba(0, 243, 255, 0.4);
+}
+
+.tabs :global(.ant-tabs-ink-bar) {
+  background: #00f3ff;
+  height: 2px;
+  box-shadow: 0 -2px 8px rgba(0, 243, 255, 0.5);
+}
+
+.tabs :global(.ant-tabs-content-holder) {
+  flex: 1;
+  overflow: hidden;
+  padding: 0;
+}
+
+.tabs :global(.ant-tabs-content) {
+  flex: 1;
+  overflow: hidden;
+}
+
+.tabs :global(.ant-tabs-tabpane) {
+  height: 100% !important;
+}
+
+.tabLabel {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 11px;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.statusIndicator {
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  animation: statusPulse 2s ease-in-out infinite;
+}
+
+.statusIndicator.online {
+  background: #00ff8f;
+  box-shadow: 0 0 8px #00ff8f;
+}
+
+.terminalContainer {
+  height: 100%;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+}
+
+.terminalContainer :global(*) {
+  min-height: 0;
+}
+
+.tasksContainer {
+  height: 100%;
+  min-height: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.tasksEmptyText {
+  font-size: 13px;
+  color: rgba(255, 255, 255, 0.3);
+}
+
+/* Loading */
+.loading {
+  position: fixed;
+  inset: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: var(--surface-0);
+  z-index: 100;
+}
+
+.loadingContent {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 24px;
+}
+
+.loader {
+  position: relative;
+  width: 48px;
+  height: 48px;
+}
+
+.loader::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  border: 2px solid transparent;
+  border-top-color: #00f3ff;
+  border-radius: 50%;
+  animation: spin 0.8s linear infinite;
+}
+
+.loader::after {
+  content: '';
+  position: absolute;
+  inset: 6px;
+  border: 2px solid transparent;
+  border-top-color: rgba(0, 243, 255, 0.4);
+  border-radius: 50%;
+  animation: spin 0.8s linear infinite reverse;
+}
+
+@keyframes spin {
+  to { transform: rotate(360deg); }
+}
+
+.loadingText {
+  font-size: 13px;
+  color: rgba(255, 255, 255, 0.4);
+  letter-spacing: 2px;
+  animation: blink 1.5s ease-in-out infinite;
+}
+
+@keyframes blink {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.5; }
+}
+
+/* Not Found */
+.notFound {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 500px;
+}
+
+.notFoundText {
+  font-size: 14px;
+  color: rgba(255, 255, 255, 0.3);
 }

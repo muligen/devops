@@ -236,6 +236,7 @@ g_context->ws_client->SetMessageCallback(
 | 2026-03-10 | #6 | 后端时区问题导致时间范围查询不准确 | ✅ 已修复 |
 | 2026-03-10 | #7 | 前端未传递 limit 导致数据被截断 | ✅ 已修复 |
 | 2026-03-10 | #8 | WebSocket 频繁断开重连提示 | ✅ 已修复 |
+| 2026-03-12 | #9 | Agent 执行 ping 命令时崩溃 | 🐛 暂不处理 |
 
 ---
 
@@ -265,3 +266,44 @@ g_context->ws_client->SetMessageCallback(
 - `web/src/pages/dashboard/index.tsx`
 
 **状态**: ✅ 已修复 |
+
+---
+
+## 2026-03-12 发现的问题
+
+### Bug #9: Agent 执行 ping 命令时崩溃
+
+**严重程度**: 高
+
+**问题描述**:
+Agent 在执行 `ping` 命令时会立即崩溃，而简单的命令（如 `echo`, `dir`）正常工作。
+
+**现象**:
+- 日志显示 "Executing command" 后没有 "Sent command result"
+- Agent 进程直接退出
+- simple 命令正常，网络相关命令（如 `ping -n 4 8.8.8.8`）导致崩溃
+
+**影响范围**:
+- 用户无法使用 ping 命令检测网络连通性
+- 需要网络诊断的任务无法执行
+
+**已尝试的修复**:
+1. 修复 stdout/stderr pipes 的可继承性设置 ❌
+2. 尝试不同的 stdin 处理方式（NUL 设备）❌
+3. 多次重建测试 ❌
+
+**可能的根本原因**:
+- `GetStdHandle(STD_INPUT_HANDLE)` 在特定环境下返回无效句柄
+- CreateProcessA 调用时参数传递有问题
+- 需要更详细的调试信息（crash dump）来确定
+
+**变通方案**:
+使用 PowerShell 的 `Test-Connection` 替代 `ping`：
+```bash
+Test-Connection -Count 1 -ComputerName 8.8.8.8
+```
+
+**修改文件**:
+- `agent/src/task/commands/exec_shell.cpp`
+
+**状态**: 🐛 暂不处理（需要 C++ 开发者调试）

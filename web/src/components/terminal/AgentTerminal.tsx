@@ -1,5 +1,8 @@
-import { useEffect, useRef, useState } from 'react'
+import { useEffect, useRef, useState, useCallback } from 'react'
 import { useTerminalStore } from '@/stores/terminal'
+import { useAuthStore } from '@/stores/auth'
+import { apiClient } from '@/api/client'
+import { taskApi } from '@/api'
 import TerminalHeader from './TerminalHeader'
 import MessageList from './MessageList'
 import QuickCommands from './QuickCommands'
@@ -25,16 +28,67 @@ export default function AgentTerminal({ agent }: AgentTerminalProps) {
     navigateHistory,
     resetHistoryIndex,
     clearMessages,
+    updateMessage,
     setCurrentAgentId,
   } = useTerminalStore()
 
   const inputRef = useRef<CommandInputRef | null>(null)
   const [expandedMessages, setExpandedMessages] = useState<Record<string, boolean>>({})
+  const token = useAuthStore((state) => state.token)
+  const [pendingTaskIds, setPendingTaskIds] = useState<Set<string>>(new Set())
+  const pollingRef = useRef<NodeJS.Timeout>()
 
   // 设置当前 Agent ID
   useEffect(() => {
     setCurrentAgentId(agent.id)
   }, [agent.id, setCurrentAgentId])
+
+  // Poll for task result updates
+  const pollTaskResults = useCallback(async () => {
+    const agentMessages = messages[agent.id] || []
+
+    // Find messages with taskId and 'running' status
+    const runningMessages = agentMessages.filter(m => m.status === 'running' && m.taskId)
+
+    for (const message of runningMessages) {
+      try {
+        const task = await taskApi.get(message.taskId!)
+        if (task.status !== 'running' && task.status !== 'pending') {
+          // Map task status to message status
+          const statusMap: Record<string, 'success' | 'failed' | 'timeout'> = {
+            success: 'success',
+            failed: 'failed',
+            timeout: 'timeout',
+          }
+          const taskStatus = statusMap[task.status] || 'completed'
+
+          // Update the message using message.id (not taskId)
+          updateMessage(agent.id, message.id, {
+            status: taskStatus,
+            content: task.output,
+            exitCode: task.exit_code,
+            duration: task.duration,
+          })
+        }
+      } catch (error) {
+        console.error('Failed to get task status:', error)
+      }
+    }
+  }, [agent.id, messages, updateMessage])
+
+  // Set up polling
+  useEffect(() => {
+    // Poll every 1 second for task updates
+    pollingRef.current = setInterval(() => {
+      pollTaskResults()
+    }, 1000)
+
+    return () => {
+      if (pollingRef.current) {
+        clearInterval(pollingRef.current)
+      }
+    }
+  }, [pollTaskResults])
 
   // 处理命令执行
   const handleExecuteCommand = async (command: string) => {
@@ -52,26 +106,26 @@ export default function AgentTerminal({ agent }: AgentTerminalProps) {
     resetHistoryIndex(agent.id)
 
     try {
-      // 创建任务
-      const result = await fetch('/api/v1/tasks', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          agent_id: agent.id,
+      // 创建任务 - 使用正确的 API 格式
+      const { data } = await apiClient.post<{ data: { id: string } }>('/tasks', {
+        agent_id: agent.id,
+        type: 'exec_shell',
+        params: {
           command: trimmedCommand,
-        }),
-      }).then((res) => res.json())
+        },
+      }, {
+        timeout: 30000,
+      })
 
       // 添加结果消息
       addMessage(agent.id, {
         type: 'result',
         content: '',
-        taskId: result.id,
+        taskId: data?.data?.id || data?.id,
         status: 'running',
       })
-    } catch {
+    } catch (error) {
+      console.error('Command execution failed:', error)
       addMessage(agent.id, {
         type: 'error',
         content: '命令执行失败',

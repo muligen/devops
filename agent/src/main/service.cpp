@@ -86,11 +86,19 @@ CommandExecutor* FindExecutor(std::vector<std::unique_ptr<CommandExecutor>>& exe
 // Parse command from WebSocket message (Server format)
 std::optional<Command> ParseServerCommand(const nlohmann::json& msg) {
     try {
-        // Server sends: {"command_id": "...", "command_type": "...", "params": {...}, "timeout": ...}
+        // Server may send: {"type": "command", "data": {"command_id": "...", "command_type": "...", "params": {...}, "timeout": ...}}
+        // Or legacy format: {"command_id": "...", "command_type": "...", "params": {...}, "timeout": ...}
+        const nlohmann::json* cmd_data = &msg;
+
+        // Check if message contains "data" field (new format with type wrapper)
+        if (msg.contains("data") && msg["data"].is_object()) {
+            cmd_data = &msg["data"];
+        }
+
         Command cmd;
 
         // Handle both command_id and id field names
-        cmd.id = msg.value("command_id", msg.value("id", ""));
+        cmd.id = cmd_data->value("command_id", cmd_data->value("id", ""));
 
         if (cmd.id.empty()) {
             LOG_WARN("Command message missing id/command_id field");
@@ -98,7 +106,7 @@ std::optional<Command> ParseServerCommand(const nlohmann::json& msg) {
         }
 
         // Parse command type
-        std::string type_str = msg.value("command_type", msg.value("type", ""));
+        std::string type_str = cmd_data->value("command_type", cmd_data->value("type", ""));
         auto type_opt = StringToCommandType(type_str);
         if (!type_opt) {
             LOG_WARN("Unknown command type: {}", type_str);
@@ -107,8 +115,8 @@ std::optional<Command> ParseServerCommand(const nlohmann::json& msg) {
         cmd.type = *type_opt;
 
         // Parse params
-        if (msg.contains("params") && msg["params"].is_object()) {
-            for (auto& [key, value] : msg["params"].items()) {
+        if (cmd_data->contains("params") && (*cmd_data)["params"].is_object()) {
+            for (auto& [key, value] : (*cmd_data)["params"].items()) {
                 if (value.is_string()) {
                     cmd.params[key] = value.get<std::string>();
                 } else {
@@ -118,7 +126,7 @@ std::optional<Command> ParseServerCommand(const nlohmann::json& msg) {
         }
 
         // Parse timeout (default 5 minutes)
-        int timeout_seconds = msg.value("timeout", 300);
+        int timeout_seconds = cmd_data->value("timeout", 300);
         cmd.timeout = std::chrono::seconds(timeout_seconds);
 
         return cmd;
@@ -254,11 +262,13 @@ void SendCommandResult(const CommandResult& result) {
 
     nlohmann::json msg;
     msg["type"] = "result";
-    msg["command_id"] = result.id;
-    msg["status"] = TaskStatusToString(result.status);
-    msg["exit_code"] = result.exit_code;
-    msg["output"] = result.output;
-    msg["duration"] = result.duration_seconds;
+    msg["data"] = {
+        {"command_id", result.id},
+        {"status", TaskStatusToString(result.status)},
+        {"exit_code", result.exit_code},
+        {"output", result.output},
+        {"duration", result.duration_seconds}
+    };
 
     g_context->ws_client->Send(msg.dump());
     LOG_INFO("Sent command result: id={}, status={}, exit_code={}",
