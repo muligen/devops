@@ -1,7 +1,16 @@
-import { useEffect, useState, useMemo } from 'react'
+import { useEffect, useState, useMemo, useCallback } from 'react'
 import { useParams, useNavigate } from 'react-router-dom'
 import { Button, Typography, Space, Tabs } from 'antd'
-import { ArrowLeftOutlined, ReloadOutlined, PlayCircleOutlined, DashboardOutlined, LineChartOutlined, DatabaseOutlined, ClockCircleOutlined } from '@ant-design/icons'
+import {
+  ArrowLeftOutlined,
+  ReloadOutlined,
+  PlayCircleOutlined,
+  DashboardOutlined,
+  LineChartOutlined,
+  DatabaseOutlined,
+  ClockCircleOutlined,
+  SettingOutlined,
+} from '@ant-design/icons'
 import ReactECharts from 'echarts-for-react'
 import { agentApi } from '@/api'
 import { formatDate } from '@/utils'
@@ -11,6 +20,9 @@ import ExecuteTaskModal from '@/components/tasks/ExecuteTaskModal'
 import styles from './index.module.css'
 
 const { Text } = Typography
+
+type TimeRange = '1h' | '24h' | '7d'
+type TabKey = 'terminal' | 'tasks'
 
 interface MetricData {
   collected_at: string
@@ -25,11 +37,13 @@ export default function AgentDetailPage() {
   const [loading, setLoading] = useState(true)
   const [agent, setAgent] = useState<Agent | null>(null)
   const [metrics, setMetrics] = useState<MetricData[]>([])
-  const [timeRange, setTimeRange] = useState('1h')
+  const [timeRange, setTimeRange] = useState<TimeRange>('1h')
   const [executeModalOpen, setExecuteModalOpen] = useState(false)
-  const [activeTab, setActiveTab] = useState('terminal')
+  const [activeTab, setActiveTab] = useState<TabKey>('terminal')
 
-  const fetchAgent = async () => {
+  const isOnline = agent?.status === 'online'
+
+  const fetchAgent = useCallback(async () => {
     if (!id) return
     setLoading(true)
     try {
@@ -40,9 +54,9 @@ export default function AgentDetailPage() {
     } finally {
       setLoading(false)
     }
-  }
+  }, [id])
 
-  const fetchMetrics = async () => {
+  const fetchMetrics = useCallback(async () => {
     if (!id) return
     try {
       const data = await agentApi.getMetrics(id, timeRange)
@@ -50,17 +64,10 @@ export default function AgentDetailPage() {
     } catch (error) {
       console.error('Failed to fetch metrics:', error)
     }
-  }
-
-  useEffect(() => {
-    fetchAgent()
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [id])
-
-  useEffect(() => {
-    fetchMetrics()
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [id, timeRange])
+
+  useEffect(() => { fetchAgent() }, [id, fetchAgent])
+  useEffect(() => { fetchMetrics() }, [id, timeRange, fetchMetrics])
 
   const historyChartOption = useMemo(() => {
     const chartData = metrics.slice().reverse()
@@ -68,10 +75,8 @@ export default function AgentDetailPage() {
       const date = new Date(m.collected_at)
       if (timeRange === '1h') {
         return date.toLocaleTimeString('zh-CN', { hour: '2-digit', minute: '2-digit' })
-      } else {
-        return date.toLocaleDateString('zh-CN', { month: '2-digit', day: '2-digit' }) + ' ' +
-               date.toLocaleTimeString('zh-CN', { hour: '2-digit', minute: '2-digit' })
       }
+      return `${date.toLocaleDateString('zh-CN', { month: '2-digit', day: '2-digit' })} ${date.toLocaleTimeString('zh-CN', { hour: '2-digit', minute: '2-digit' })}`
     })
     const cpuData = chartData.map((m) => m.cpu_usage)
     const memoryData = chartData.map((m) => m.memory_percent)
@@ -79,13 +84,7 @@ export default function AgentDetailPage() {
 
     return {
       backgroundColor: 'transparent',
-      grid: {
-        top: 15,
-        right: 10,
-        bottom: 25,
-        left: 40,
-        containLabel: false,
-      },
+      grid: { top: 15, right: 10, bottom: 25, left: 40, containLabel: false },
       tooltip: {
         trigger: 'axis',
         backgroundColor: 'rgba(10, 10, 15, 0.95)',
@@ -142,10 +141,7 @@ export default function AgentDetailPage() {
           type: 'line',
           smooth: false,
           symbol: 'none',
-          lineStyle: {
-            width: 1.5,
-            color: '#00f3ff',
-          },
+          lineStyle: { width: 1.5, color: '#00f3ff' },
           areaStyle: {
             color: {
               type: 'linear',
@@ -163,10 +159,7 @@ export default function AgentDetailPage() {
           type: 'line',
           smooth: false,
           symbol: 'none',
-          lineStyle: {
-            width: 1.5,
-            color: '#00ff8f',
-          },
+          lineStyle: { width: 1.5, color: '#00ff8f' },
           areaStyle: {
             color: {
               type: 'linear',
@@ -184,10 +177,7 @@ export default function AgentDetailPage() {
           type: 'line',
           smooth: false,
           symbol: 'none',
-          lineStyle: {
-            width: 1.5,
-            color: '#ff6b35',
-          },
+          lineStyle: { width: 1.5, color: '#ff6b35' },
           areaStyle: {
             color: {
               type: 'linear',
@@ -204,84 +194,31 @@ export default function AgentDetailPage() {
     }
   }, [metrics, timeRange])
 
-  if (loading) {
-    return (
-      <div className={styles.loading}>
-        <div className={styles.loadingContent}>
-          <div className={styles.loader}></div>
-          <div className={styles.loadingText}>系统初始化中...</div>
-        </div>
-      </div>
-    )
-  }
-
-  if (!agent) {
-    return (
-      <div className={styles.notFound}>
-        <Text className={styles.notFoundText}>系统未找到该 Agent 节点</Text>
-      </div>
-    )
-  }
-
-  const isOnline = agent.status === 'online'
-
-  const metricGaugeOption = (value: number, name: string, color: string) => ({
-    series: [
-      {
-        type: 'gauge',
-        startAngle: 180,
-        endAngle: 0,
-        min: 0,
-        max: 100,
-        radius: '80%',
-        splitNumber: 5,
-        axisLine: {
-          lineStyle: {
-            width: 8,
-            color: [[1, 'rgba(255, 255, 255, 0.08)']],
-          },
-        },
-        pointer: {
-          itemStyle: { color },
-          length: '55%',
-          width: 4,
-        },
-        axisTick: {
-          show: true,
-          splitNumber: 2,
-          length: 4,
-          lineStyle: { color: 'rgba(255, 255, 255, 0.15)' },
-        },
-        splitLine: {
-          show: true,
-          length: 8,
-          lineStyle: {
-            color: 'rgba(255, 255, 255, 0.08)',
-            width: 2,
-          },
-        },
-        axisLabel: {
-          show: true,
-          distance: 12,
-          color: 'rgba(255, 255, 255, 0.35)',
-          fontSize: 11,
-        },
-        title: {
-          offsetCenter: [0, '55%'],
-          fontSize: 13,
-          color: 'rgba(255, 255, 255, 0.6)',
-        },
-        detail: {
-          valueAnimation: true,
-          fontSize: 32,
-          offsetCenter: [0, '5%'],
-          color,
-          fontWeight: 500,
-          formatter: (value: number) => `${value.toFixed(1)}%`,
-        },
-        data: [{ value: value || 0, name }],
+  const createGaugeOption = (value: number, name: string, color: string) => ({
+    series: [{
+      type: 'gauge',
+      startAngle: 180,
+      endAngle: 0,
+      min: 0,
+      max: 100,
+      radius: '80%',
+      splitNumber: 5,
+      axisLine: { lineStyle: { width: 8, color: [[1, 'rgba(255, 255, 255, 0.08)']] } },
+      pointer: { itemStyle: { color }, length: '55%', width: 4 },
+      axisTick: { show: true, splitNumber: 2, length: 4, lineStyle: { color: 'rgba(255, 255, 255, 0.15)' } },
+      splitLine: { show: true, length: 8, lineStyle: { color: 'rgba(255, 255, 255, 0.08)', width: 2 } },
+      axisLabel: { show: true, distance: 12, color: 'rgba(255, 255, 255, 0.35)', fontSize: 11 },
+      title: { offsetCenter: [0, '55%'], fontSize: 13, color: 'rgba(255, 255, 255, 0.6)' },
+      detail: {
+        valueAnimation: true,
+        fontSize: 32,
+        offsetCenter: [0, '5%'],
+        color,
+        fontWeight: 500,
+        formatter: (value: number) => `${value.toFixed(1)}%`,
       },
-    ],
+      data: [{ value: value || 0, name }],
+    }],
   })
 
   const tabItems = [
@@ -293,33 +230,43 @@ export default function AgentDetailPage() {
           {isOnline && <span className={`${styles.statusIndicator} ${styles.online}`}></span>}
         </span>
       ),
-      children: (
-        <div className={styles.terminalContainer}>
-          <AgentTerminal agent={agent} />
-        </div>
-      ),
+      children: <div className={styles.terminalContainer}><AgentTerminal agent={agent} /></div>,
     },
     {
       key: 'tasks',
-      label: (
-        <span className={styles.tabLabel}>
-          任务执行记录
-        </span>
-      ),
-      children: (
-        <div className={styles.tasksContainer}>
-          <Text className={styles.tasksEmptyText}>暂无任务执行记录</Text>
-        </div>
-      ),
+      label: <span className={styles.tabLabel}>任务执行记录</span>,
+      children: <div className={styles.tasksContainer}><Text className={styles.tasksEmptyText}>暂无任务执行记录</Text></div>,
     },
   ]
 
-  return (
-    <div className={styles.container}>
-      {/* Scanline overlay */}
-      <div className={styles.scanlines}></div>
+  // Render Loading State
+  if (loading) {
+    return (
+      <div className={styles.loading}>
+        <div className={styles.loadingContent}>
+          <div className={styles.loader}></div>
+          <div className={styles.loadingText}>系统初始化中...</div>
+        </div>
+      </div>
+    )
+  }
 
-      {/* Top Navigation Bar */}
+  // Render Not Found State
+  if (!agent) {
+    return (
+      <div className={styles.notFound}>
+        <Text className={styles.notFoundText}>系统未找到该 Agent 节点</Text>
+      </div>
+    )
+  }
+
+  // Render Main Content
+  return (
+    <div className={`${styles.container} ${styles.detailPage}`}>
+      {/* Scanline Overlay */}
+      <div className={styles.scanlines} />
+
+      {/* Header */}
       <header className={styles.header}>
         <div className={styles.headerLeft}>
           <Button
@@ -329,7 +276,7 @@ export default function AgentDetailPage() {
           >
             返回节点列表
           </Button>
-          <div className={styles.headerDivider}></div>
+          <div className={styles.headerDivider} />
           <div>
             <h1 className={styles.agentName}>{agent.name}</h1>
             <div className={styles.agentMeta}>
@@ -340,11 +287,7 @@ export default function AgentDetailPage() {
           </div>
         </div>
         <Space size={12}>
-          <Button
-            className={styles.headerButton}
-            icon={<ReloadOutlined />}
-            onClick={fetchAgent}
-          >
+          <Button className={styles.headerButton} icon={<ReloadOutlined />} onClick={fetchAgent}>
             刷新数据
           </Button>
           <Button
@@ -359,14 +302,14 @@ export default function AgentDetailPage() {
         </Space>
       </header>
 
-      {/* Main Grid Layout */}
+      {/* Main Grid */}
       <div className={styles.grid}>
-        {/* Agent Info Card */}
+        {/* Info Card */}
         <section className={`${styles.card} ${styles.infoCard}`}>
           <h2 className={styles.cardTitle}>
             <DashboardOutlined />
             <span>系统信息</span>
-            <span className={styles.cardTitleLine}></span>
+            <span className={styles.cardTitleLine} />
           </h2>
           <div className={styles.infoGrid}>
             <div className={styles.infoRow}>
@@ -376,7 +319,7 @@ export default function AgentDetailPage() {
             <div className={styles.infoRow}>
               <span className={styles.infoLabel}>状态</span>
               <span className={`${styles.status} ${styles[isOnline ? 'online' : 'offline']}`}>
-                <span className={styles.statusDot}></span>
+                <span className={styles.statusDot} />
                 {isOnline ? 'ONLINE' : 'OFFLINE'}
               </span>
             </div>
@@ -389,9 +332,7 @@ export default function AgentDetailPage() {
               <span className={styles.infoValue}>{agent.version || '-'}</span>
             </div>
             <div className={styles.infoRow}>
-              <span className={styles.infoLabel}>
-                <ClockCircleOutlined />
-              </span>
+              <span className={styles.infoLabel}><ClockCircleOutlined /></span>
               <span className={styles.infoValue}>{agent.last_seen_at ? formatDate(agent.last_seen_at) : '-'}</span>
             </div>
             <div className={styles.infoRow}>
@@ -401,77 +342,68 @@ export default function AgentDetailPage() {
           </div>
         </section>
 
-        {/* Real-time Metrics Card */}
+        {/* Metrics Card */}
         <section className={`${styles.card} ${styles.metricsCard}`}>
           <h2 className={styles.cardTitle}>
             <LineChartOutlined />
             <span>实时负载</span>
-            <span className={styles.cardTitleLine}></span>
+            <span className={styles.cardTitleLine} />
           </h2>
           <div className={styles.gaugesGrid}>
             <div className={styles.gaugeWrapper}>
               <ReactECharts
-                option={metricGaugeOption(agent.cpu_usage || 0, 'CPU', '#00f3ff')}
+                option={createGaugeOption(agent.cpu_usage || 0, 'CPU', '#00f3ff')}
                 style={{ width: '100%', height: '100%' }}
                 opts={{ renderer: 'svg' }}
-                lazyUpdate={true}
+                lazyUpdate
               />
             </div>
             <div className={styles.gaugeWrapper}>
               <ReactECharts
-                option={metricGaugeOption(agent.memory_usage || 0, '内存', '#00ff8f')}
+                option={createGaugeOption(agent.memory_usage || 0, '内存', '#00ff8f')}
                 style={{ width: '100%', height: '100%' }}
                 opts={{ renderer: 'svg' }}
-                lazyUpdate={true}
+                lazyUpdate
               />
             </div>
             <div className={styles.gaugeWrapper}>
               <ReactECharts
-                option={metricGaugeOption(agent.disk_usage || 0, '磁盘', '#ff6b35')}
+                option={createGaugeOption(agent.disk_usage || 0, '磁盘', '#ff6b35')}
                 style={{ width: '100%', height: '100%' }}
                 opts={{ renderer: 'svg' }}
-                lazyUpdate={true}
+                lazyUpdate
               />
             </div>
           </div>
         </section>
 
-        {/* History Chart Card */}
+        {/* Chart Card */}
         <section className={`${styles.card} ${styles.chartCard}`}>
           <div className={styles.chartHeader}>
             <h2 className={styles.cardTitle}>
               <DatabaseOutlined />
               <span>指标趋势</span>
-              <span className={styles.cardTitleLine}></span>
+              <span className={styles.cardTitleLine} />
             </h2>
             <div className={styles.timeButtons}>
-              <button
-                className={`${styles.timeButton} ${timeRange === '1h' ? styles.active : ''}`}
-                onClick={() => setTimeRange('1h')}
-              >
-                1H
-              </button>
-              <button
-                className={`${styles.timeButton} ${timeRange === '24h' ? styles.active : ''}`}
-                onClick={() => setTimeRange('24h')}
-              >
-                24H
-              </button>
-              <button
-                className={`${styles.timeButton} ${timeRange === '7d' ? styles.active : ''}`}
-                onClick={() => setTimeRange('7d')}
-              >
-                7D
-              </button>
+              {(['1h', '24h', '7d'] as TimeRange[]).map((range) => (
+                <button
+                  key={range}
+                  className={`${styles.timeButton} ${timeRange === range ? styles.active : ''}`}
+                  onClick={() => setTimeRange(range)}
+                >
+                  {range.toUpperCase()}
+                </button>
+              ))}
             </div>
           </div>
           <div className={styles.chartWrapper}>
             <ReactECharts
               option={historyChartOption}
-              style={{ width: '100%', height: '100%' }}
+              style={{ width: '100%', height: '50%' }}
               opts={{ renderer: 'svg' }}
-              lazyUpdate={true}
-              notMerge={true}
+              lazyUpdate
+              notMerge
             />
           </div>
         </section>
@@ -479,9 +411,9 @@ export default function AgentDetailPage() {
         {/* Terminal Card */}
         <section className={`${styles.card} ${styles.terminalCard}`}>
           <h2 className={styles.cardTitle}>
-            <DatabaseOutlined />
+            <SettingOutlined />
             <span>终端控制台</span>
-            <span className={styles.cardTitleLine}></span>
+            <span className={styles.cardTitleLine} />
           </h2>
           <Tabs
             activeKey={activeTab}

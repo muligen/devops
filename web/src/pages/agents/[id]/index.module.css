@@ -3,7 +3,39 @@
    精密监控 · 数据驱动 · 工业美学
    ============================================ */
 
-/* Container */
+/* ===== CSS Custom Properties ===== */
+.detailPage {
+  --header-height: 64px;
+  --header-padding: 20px;
+  --header-margin: 12px;
+  --card-padding-sm: 12px 16px;
+  --card-padding-lg: 16px 20px;
+  --grid-gap: 12px;
+  --row1-height: 220px;
+
+  /* Colors */
+  --cyber-cyan: #00f3ff;
+  --cyber-green: #00ff8f;
+  --cyber-orange: #ff6b35;
+  --cyber-error: #ff4d4f;
+  --border-default: rgba(255, 255, 255, 0.06);
+  --border-light: rgba(255, 255, 255, 0.08);
+  --border-active: rgba(0, 243, 255, 0.4);
+  --bg-button: rgba(0, 243, 255, 0.1);
+
+  /* Text */
+  --text-primary: #ffffff;
+  --text-secondary: rgba(255, 255, 255, 0.7);
+  --text-tertiary: rgba(255, 255, 255, 0.5);
+  --text-muted: rgba(255, 255, 255, 0.35);
+  --text-disabled: rgba(255, 255, 255, 0.2);
+
+  /* Transitions */
+  --transition-fast: 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+  --transition-normal: 0.3s ease;
+}
+
+/* ===== Layout ===== */
 .container {
   position: relative;
   height: calc(100vh - 48px);
@@ -29,17 +61,23 @@
   );
 }
 
-/* Grid Layout */
+/* Main Grid Layout */
 .grid {
   position: relative;
   display: grid;
   grid-template-columns: repeat(12, 1fr);
-  grid-template-rows: 220px 1fr;
-  gap: 12px;
+  grid-template-rows: var(--row1-height) 1fr;
+  gap: var(--grid-gap);
   flex: 1;
   min-height: 0;
   z-index: 2;
 }
+
+/* Card Grid Positions */
+.infoCard      { grid-column: 1 / 4; grid-row: 1; }
+.metricsCard   { grid-column: 4 / 13; grid-row: 1; }
+.chartCard     { grid-column: 1 /  7; grid-row: 2; }
+.terminalCard  { grid-column: 7 / 13; grid-row: 2; }
 
 .infoCard,
 .metricsCard,
@@ -49,64 +87,29 @@
   overflow: hidden;
 }
 
-.infoCard {
-  grid-column: 1 / 4;
-  grid-row: 1;
-}
-
-.metricsCard {
-  grid-column: 4 / 13;
-  grid-row: 1;
-}
-
-.chartCard {
-  grid-column: 1 / 7;
-  grid-row: 2;
-}
-
-.terminalCard {
-  grid-column: 7 / 13;
-  grid-row: 2;
-}
-
+/* Responsive Layout */
 @media (max-width: 1400px) {
   .grid {
     grid-template-columns: repeat(12, 1fr);
     grid-template-rows: auto auto auto auto;
-    gap: 12px;
+    gap: var(--grid-gap);
   }
-
-  .infoCard {
-    grid-column: 1 / 13;
-    grid-row: 1;
-  }
-
-  .metricsCard {
-    grid-column: 1 / 13;
-    grid-row: 2;
-  }
-
-  .chartCard {
-    grid-column: 1 / 13;
-    grid-row: 3;
-  }
-
-  .terminalCard {
-    grid-column: 1 / 13;
-    grid-row: 4;
-  }
+  .infoCard      { grid-column: 1 / 13; grid-row: 1; }
+  .metricsCard   { grid-column: 1 / 13; grid-row: 2; }
+  .chartCard     { grid-column: 1 / 13; grid-row: 3; }
+  .terminalCard  { grid-column: 1 / 13; grid-row: 4; }
 }
 
-/* Header */
+/* ===== Header ===== */
 .header {
   position: relative;
   display: flex;
   justify-content: space-between;
   align-items: center;
-  margin-bottom: 12px;
-  padding: 16px 20px;
+  margin-bottom: var(--header-margin);
+  padding: 16px var(--header-padding);
   background: linear-gradient(180deg, rgba(26, 26, 36, 0.9) 0%, rgba(18, 18, 24, 0.98) 100%);
-  border: 1px solid rgba(255, 255, 255, 0.06);
+  border: 1px solid var(--border-default);
   border-radius: 8px;
   z-index: 2;
 }
@@ -118,9 +121,11 @@
   left: 0;
   right: 0;
   height: 1px;
-  background: linear-gradient(90deg, transparent, rgba(0, 243, 255, 0.5), transparent);
+  background: linear-gradient(90deg, transparent, var(--cyber-cyan), transparent);
+  opacity: 0.5;
 }
 
+/* Header Left Section */
 .headerLeft {
   display: flex;
   align-items: center;
@@ -130,29 +135,31 @@
 .headerDivider {
   width: 1px;
   height: 40px;
-  background: rgba(255, 255, 255, 0.08);
+  background: var(--border-light);
 }
 
+/* Navigation Button */
 .navButton {
   background: transparent;
   border: 1px solid rgba(255, 255, 255, 0.1);
-  color: rgba(255, 255, 255, 0.7);
+  color: var(--text-secondary);
   height: 40px;
   padding: 0 16px;
-  transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+  transition: all var(--transition-fast);
 }
 
 .navButton:hover {
   background: rgba(255, 255, 255, 0.05);
-  border-color: rgba(0, 243, 255, 0.4);
-  color: #fff;
+  border-color: var(--border-active);
+  color: var(--text-primary);
 }
 
+/* Agent Info in Header */
 .agentName {
   margin: 0;
   font-size: 18px;
   font-weight: 500;
-  color: #fff;
+  color: var(--text-primary);
   letter-spacing: 0.5px;
 }
 
@@ -163,81 +170,60 @@
   margin-top: 2px;
 }
 
-.hostname {
+.hostname,
+.ip {
   font-size: 12px;
-  color: rgba(255, 255, 255, 0.45);
+  color: var(--text-secondary);
 }
 
 .metaSeparator {
   color: rgba(255, 255, 255, 0.15);
 }
 
-.ip {
-  font-size: 12px;
-  color: rgba(255, 255, 255, 0.45);
-}
-
+/* Header Action Buttons */
 .headerButton {
   height: 40px;
   background: transparent;
   border: 1px solid rgba(255, 255, 255, 0.1);
-  color: rgba(255, 255, 255, 0.7);
-  transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+  color: var(--text-secondary);
+  transition: all var(--transition-fast);
 }
 
 .headerButton:hover:not(:disabled) {
   background: rgba(255, 255, 255, 0.05);
-  border-color: rgba(0, 243, 255, 0.4);
-  color: #fff;
+  border-color: var(--border-active);
+  color: var(--text-primary);
 }
 
 .headerButton:disabled {
   border-color: rgba(255, 255, 255, 0.05);
-  color: rgba(255, 255, 255, 0.2);
+  color: var(--text-disabled);
 }
 
 .primaryButton {
-  background: rgba(0, 243, 255, 0.1);
-  border-color: rgba(0, 243, 255, 0.4);
-  color: #00f3ff;
+  background: var(--bg-button);
+  border-color: var(--border-active);
+  color: var(--cyber-cyan);
 }
 
 .primaryButton:hover:not(:disabled) {
   background: rgba(0, 243, 255, 0.2);
-  border-color: #00f3ff;
+  border-color: var(--cyber-cyan);
   box-shadow: 0 0 20px rgba(0, 243, 255, 0.3);
 }
 
-/* Cards */
+/* ===== Cards ===== */
 .card {
   position: relative;
   background: linear-gradient(180deg, rgba(20, 20, 28, 0.8) 0%, rgba(14, 14, 20, 0.95) 100%);
-  border: 1px solid rgba(255, 255, 255, 0.06);
+  border: 1px solid var(--border-default);
   border-radius: 8px;
   overflow: hidden;
   backdrop-filter: blur(12px);
   min-height: 0;
 }
 
-.chartCard,
-.terminalCard,
-.metricsCard {
-  display: flex;
-  flex-direction: column;
-  min-height: 0;
-  overflow: hidden;
-}
-
-.card :global(.echarts-for-react),
-.card :global(.echarts-container) {
-  flex: 1;
-  min-height: 0;
-}
-
-.cardTitle {
-  flex-shrink: 0;
-}
-
+/* Card Overlay Effects */
 .card::before {
   content: '';
   position: absolute;
@@ -262,40 +248,60 @@
   pointer-events: none;
 }
 
+/* Flex Cards */
+.chartCard,
+.terminalCard,
+.metricsCard {
+  display: flex;
+  flex-direction: column;
+  min-height: 0;
+  overflow: hidden;
+}
+
+/* Card Hover Effect */
 .card:hover :global(.echarts-for-react),
 .card:hover :global(.echarts-container) {
   filter: brightness(1.02);
 }
 
+/* Card Title */
 .cardTitle {
+  flex-shrink: 0;
   display: flex;
   align-items: center;
   gap: 10px;
   margin: 0;
-  padding: 12px 16px;
+  padding: var(--card-padding-sm);
   font-size: 12px;
   font-weight: 600;
-  color: rgba(255, 255, 255, 0.5);
+  color: var(--text-tertiary);
   text-transform: uppercase;
   letter-spacing: 1.5px;
-  border-bottom: 1px solid rgba(255, 255, 255, 0.04);
+  border-bottom: 1px solid var(--border-default);
 }
 
 .cardTitle svg {
   font-size: 14px;
-  color: rgba(255, 255, 255, 0.3);
+  color: var(--text-muted);
 }
 
 .cardTitleLine {
   flex: 1;
   height: 1px;
-  background: linear-gradient(90deg, rgba(255, 255, 255, 0.08), transparent);
+  background: linear-gradient(90deg, var(--border-light), transparent);
   margin-left: 12px;
 }
 
-/* Info Grid */
+/* Chart in Cards */
+.card :global(.echarts-for-react),
+.card :global(.echarts-container) {
+  flex: 1;
+  min-height: 0;
+}
+
+/* ===== Info Card ===== */
 .infoGrid {
-  padding: 12px 16px;
+  padding: var(--card-padding-sm);
   display: flex;
   flex-direction: column;
   gap: 10px;
@@ -309,7 +315,7 @@
   justify-content: space-between;
   align-items: center;
   padding: 8px 0;
-  border-bottom: 1px dashed rgba(255, 255, 255, 0.04);
+  border-bottom: 1px dashed var(--border-light);
 }
 
 .infoRow:last-child {
@@ -318,7 +324,7 @@
 
 .infoLabel {
   font-size: 12px;
-  color: rgba(255, 255, 255, 0.35);
+  color: var(--text-muted);
   text-transform: uppercase;
   letter-spacing: 0.5px;
 }
@@ -330,11 +336,11 @@
 
 .infoValue {
   font-size: 12px;
-  color: rgba(255, 255, 255, 0.7);
+  color: var(--text-secondary);
   text-align: right;
 }
 
-/* Status */
+/* Status Badge */
 .status {
   display: inline-flex;
   align-items: center;
@@ -349,14 +355,14 @@
 .status.online {
   background: rgba(0, 255, 143, 0.1);
   border: 1px solid rgba(0, 255, 143, 0.3);
-  color: #00ff8f;
+  color: var(--cyber-green);
   box-shadow: 0 0 12px rgba(0, 255, 143, 0.15);
 }
 
 .status.offline {
   background: rgba(255, 77, 79, 0.1);
   border: 1px solid rgba(255, 77, 79, 0.3);
-  color: #ff4d4f;
+  color: var(--cyber-error);
 }
 
 .statusDot {
@@ -376,7 +382,7 @@
   50% { opacity: 0.5; }
 }
 
-/* Gauges Grid */
+/* ===== Metrics Card (Gauges) ===== */
 .gaugesGrid {
   display: grid;
   grid-template-columns: repeat(3, 1fr);
@@ -388,7 +394,7 @@
 }
 
 .gaugesGrid > :global(.react_echarts_container) {
-  border-right: 1px solid rgba(255, 255, 255, 0.04);
+  border-right: 1px solid var(--border-light);
   min-height: 0;
 }
 
@@ -411,13 +417,13 @@
   min-height: 0;
 }
 
-/* Chart Card */
+/* ===== Chart Card (History) ===== */
 .chartHeader {
   display: flex;
   justify-content: space-between;
   align-items: center;
-  padding: 12px 16px;
-  border-bottom: 1px solid rgba(255, 255, 255, 0.04);
+  padding: var(--card-padding-sm);
+  border-bottom: 1px solid var(--border-default);
 }
 
 .chartHeader .cardTitle {
@@ -434,43 +440,35 @@
 .timeButton {
   padding: 6px 14px;
   background: transparent;
-  border: 1px solid rgba(255, 255, 255, 0.08);
+  border: 1px solid var(--border-light);
   border-radius: 4px;
   font-size: 13px;
   font-weight: 500;
-  color: rgba(255, 255, 255, 0.4);
+  color: var(--text-secondary);
   cursor: pointer;
-  transition: all 0.2s ease;
+  transition: all var(--transition-fast);
 }
 
 .timeButton:hover {
-  border-color: rgba(0, 243, 255, 0.3);
-  color: rgba(255, 255, 255, 0.7);
+  border-color: var(--border-active);
+  color: var(--text-primary);
 }
 
 .timeButton.active {
-  background: rgba(0, 243, 255, 0.1);
-  border-color: rgba(0, 243, 255, 0.4);
-  color: #00f3ff;
+  background: var(--bg-button);
+  border-color: var(--border-active);
+  color: var(--cyber-cyan);
 }
 
 .chartWrapper {
   flex: 1;
   min-height: 0;
-  padding: 12px 16px;
+  padding: var(--card-padding-sm);
 }
 
-.chartWrapper :global(.echarts-for-react) {
-  height: 100% !important;
-  min-height: 0;
-}
+.chartWrapper :global(.echarts-for-react)
 
-.chartWrapper :global(.echarts-container) {
-  height: 100% !important;
-  min-height: 0;
-}
-
-/* Terminal Card */
+/* ===== Terminal Card ===== */
 .tabs {
   flex: 1;
   display: flex;
@@ -494,7 +492,7 @@
 }
 
 .tabs :global(.ant-tabs-tab:hover) {
-  color: rgba(255, 255, 255, 0.8);
+  color: var(--text-primary);
 }
 
 .tabs :global(.ant-tabs-tab-active) {
@@ -502,25 +500,21 @@
 }
 
 .tabs :global(.ant-tabs-tab-active .ant-tabs-tab-btn) {
-  color: #00f3ff;
+  color: var(--cyber-cyan);
   text-shadow: 0 0 12px rgba(0, 243, 255, 0.4);
 }
 
 .tabs :global(.ant-tabs-ink-bar) {
-  background: #00f3ff;
+  background: var(--cyber-cyan);
   height: 2px;
   box-shadow: 0 -2px 8px rgba(0, 243, 255, 0.5);
 }
 
-.tabs :global(.ant-tabs-content-holder) {
-  flex: 1;
-  overflow: hidden;
-  padding: 0;
-}
-
+.tabs :global(.ant-tabs-content-holder)
 .tabs :global(.ant-tabs-content) {
   flex: 1;
   overflow: hidden;
+  padding: 0;
 }
 
 .tabs :global(.ant-tabs-tabpane) {
@@ -544,15 +538,8 @@
 }
 
 .statusIndicator.online {
-  background: #00ff8f;
-  box-shadow: 0 0 8px #00ff8f;
-}
-
-.terminalContainer {
-  height: 100%;
-  min-height: 0;
-  display: flex;
-  flex-direction: column;
+  background: var(--cyber-green);
+  box-shadow: 0 0 8px var(--cyber-green);
 }
 
 .terminalContainer :global(*) {
@@ -569,10 +556,10 @@
 
 .tasksEmptyText {
   font-size: 13px;
-  color: rgba(255, 255, 255, 0.3);
+  color: var(--text-muted);
 }
 
-/* Loading */
+/* ===== Loading State ===== */
 .loading {
   position: fixed;
   inset: 0;
@@ -601,7 +588,7 @@
   position: absolute;
   inset: 0;
   border: 2px solid transparent;
-  border-top-color: #00f3ff;
+  border-top-color: var(--cyber-cyan);
   border-radius: 50%;
   animation: spin 0.8s linear infinite;
 }
@@ -622,7 +609,7 @@
 
 .loadingText {
   font-size: 13px;
-  color: rgba(255, 255, 255, 0.4);
+  color: var(--text-secondary);
   letter-spacing: 2px;
   animation: blink 1.5s ease-in-out infinite;
 }
@@ -632,7 +619,7 @@
   50% { opacity: 0.5; }
 }
 
-/* Not Found */
+/* ===== Not Found State ===== */
 .notFound {
   display: flex;
   align-items: center;
@@ -642,5 +629,5 @@
 
 .notFoundText {
   font-size: 14px;
-  color: rgba(255, 255, 255, 0.3);
+  color: var(--text-muted);
 }
